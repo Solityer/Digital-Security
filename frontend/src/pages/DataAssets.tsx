@@ -6,16 +6,30 @@ import {
 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { getAssets, createAsset, getAsset, generateAssetGraph } from '../api/endpoints'
+import { getGraphData, getId, safeNumber, safeString, toArray, toObject } from '../api/normalizers'
 import dayjs from 'dayjs'
 
-const INDUSTRIES = ['金融', '医疗', '政务', '交通', '教育', '工业', '电信', '零售', '能源', '其他']
+const INDUSTRIES = [
+  { label: '金融', value: 'finance' },
+  { label: '医疗', value: 'medical' },
+  { label: '政务', value: 'government' },
+  { label: '社交', value: 'social' },
+]
 const SUBJECT_TYPES = ['自然人', '法人', '设备', '事件', '地理位置', '机构', '其他']
 const SENSITIVITY = [1, 2, 3, 4, 5]
 const COMPLIANCE_TAGS_OPTIONS = ['GDPR', '个人信息保护法', '数据安全法', '网络安全法', 'ISO27001', 'SOC2', '等保三级', 'PCI-DSS']
 const AUTH_SCOPES = ['公开', '内部', '合规授权', '仅限研究', '政府专用']
 
+const INDUSTRY_LABELS: Record<string, string> = {
+  finance: '金融',
+  medical: '医疗',
+  government: '政务',
+  social: '社交',
+}
+
 interface Asset {
   id: string
+  asset_id?: string
   name: string
   industry: string
   data_source?: string
@@ -31,8 +45,9 @@ interface Asset {
   status?: string
   asset_hash?: string
   ownership_credential?: string
-  chain_record?: string
+  chain_record?: string | Record<string, unknown>
   created_at?: string
+  graph_snapshot?: GraphData & { node_count?: number; edge_count?: number }
 }
 
 interface GraphData {
@@ -50,14 +65,14 @@ const statusMap: Record<string, { label: string; cls: string }> = {
 }
 
 function buildGraphOption(graphData: GraphData) {
-  const nodes = (graphData.nodes ?? []).map((n, i) => ({
+  const nodes = toArray(graphData?.nodes).map((n, i) => ({
     id: String(n.id ?? i),
     name: String(n.label ?? n.id ?? i),
     symbolSize: 30 + Math.random() * 20,
     itemStyle: { color: `hsl(${(i * 47) % 360}, 70%, 55%)` },
     label: { show: true, color: '#e2e8f0', fontSize: 10 },
   }))
-  const links = (graphData.edges ?? []).map((e) => ({
+  const links = toArray(graphData?.edges).map((e) => ({
     source: String(e.source),
     target: String(e.target),
   }))
@@ -80,6 +95,7 @@ function buildGraphOption(graphData: GraphData) {
 export default function DataAssets() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [graphData, setGraphData] = useState<GraphData | null>(null)
@@ -89,7 +105,7 @@ export default function DataAssets() {
   const [formLoading, setFormLoading] = useState(false)
   const [form, setForm] = useState({
     name: '',
-    industry: '金融',
+    industry: 'finance',
     data_source: '',
     subject_type: '自然人',
     node_meaning: '',
@@ -102,10 +118,12 @@ export default function DataAssets() {
 
   const loadAssets = useCallback(async () => {
     setLoading(true)
+    setLoadError('')
     try {
       const data = await getAssets()
-      setAssets(data?.items ?? data?.assets ?? data ?? [])
-    } catch {
+      setAssets(toArray(data, ['items', 'assets']))
+    } catch (err: unknown) {
+      setLoadError(err instanceof Error ? err.message : '资产列表加载失败')
       setAssets([])
     } finally {
       setLoading(false)
@@ -121,7 +139,7 @@ export default function DataAssets() {
     try {
       await createAsset(form as unknown as Record<string, unknown>)
       setShowForm(false)
-      setForm({ name: '', industry: '金融', data_source: '', subject_type: '自然人', node_meaning: '', edge_meaning: '', sensitivity_level: 3, authorization_scope: '内部', compliance_tags: [], description: '' })
+      setForm({ name: '', industry: 'finance', data_source: '', subject_type: '自然人', node_meaning: '', edge_meaning: '', sensitivity_level: 3, authorization_scope: '内部', compliance_tags: [], description: '' })
       await loadAssets()
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : '创建失败')
@@ -132,10 +150,14 @@ export default function DataAssets() {
 
   const handleViewAsset = async (asset: Asset) => {
     setSelectedAsset(asset)
-    setGraphData(null)
+    setGraphData(asset.graph_snapshot ? getGraphData(asset.graph_snapshot) : null)
     try {
-      const data = await getAsset(asset.id)
-      setSelectedAsset(data?.asset ?? data)
+      const data = await getAsset(getId(asset))
+      const detail = toObject<Asset>(data, asset)
+      setSelectedAsset(detail)
+      if (detail.graph_snapshot) {
+        setGraphData(getGraphData(detail.graph_snapshot))
+      }
     } catch {}
   }
 
@@ -144,8 +166,8 @@ export default function DataAssets() {
     setGraphLoading(true)
     setGraphError('')
     try {
-      const data = await generateAssetGraph(selectedAsset.id)
-      setGraphData(data?.graph ?? data)
+      const data = await generateAssetGraph(getId(selectedAsset))
+      setGraphData(getGraphData(data?.graph ?? data))
     } catch (err: unknown) {
       setGraphError(err instanceof Error ? err.message : '生成失败')
     } finally {
@@ -161,6 +183,29 @@ export default function DataAssets() {
         : [...f.compliance_tags, tag],
     }))
   }
+
+  const assetList = toArray<Asset>(assets)
+  const selectedAssetId = getId(selectedAsset)
+  const complianceTags = toArray<string>(selectedAsset?.compliance_tags)
+  const graphNodeCount = toArray(graphData?.nodes).length
+  const graphEdgeCount = toArray(graphData?.edges).length
+  const totalNodes = assetList.reduce((sum, asset) => sum + safeNumber(asset?.node_count ?? asset?.graph_snapshot?.node_count), 0)
+  const totalEdges = assetList.reduce((sum, asset) => sum + safeNumber(asset?.edge_count ?? asset?.graph_snapshot?.edge_count), 0)
+  const activeAssetCount = assetList.filter((asset) => safeString(asset?.status) === 'active').length
+  const industryBreakdown = Object.entries(
+    assetList.reduce((acc, asset) => {
+      const key = safeString(asset?.industry, 'unknown')
+      acc[key] = (acc[key] ?? 0) + 1
+      return acc
+    }, {} as Record<string, number>),
+  )
+  const chainRecordText = selectedAsset?.chain_record
+    ? safeString(
+      typeof selectedAsset.chain_record === 'string'
+        ? selectedAsset.chain_record
+        : JSON.stringify(selectedAsset.chain_record),
+    )
+    : ''
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -181,6 +226,15 @@ export default function DataAssets() {
         </div>
       </div>
 
+      {loadError ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div className="flex items-center justify-between gap-4">
+            <span>{loadError}</span>
+            <button onClick={loadAssets} className="underline underline-offset-2">重试</button>
+          </div>
+        </div>
+      ) : null}
+
       {/* Create form modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setShowForm(false)}>
@@ -198,7 +252,7 @@ export default function DataAssets() {
                 <div>
                   <label className="form-label">所属行业</label>
                   <select className="form-input" value={form.industry} onChange={e => setForm(f => ({ ...f, industry: e.target.value }))}>
-                    {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
+                    {INDUSTRIES.map((industry) => <option key={industry.value} value={industry.value}>{industry.label}</option>)}
                   </select>
                 </div>
                 <div>
@@ -266,7 +320,7 @@ export default function DataAssets() {
           <h2 className="section-header">资产列表</h2>
           {loading ? (
             <LoadingSpinner message="加载资产列表..." className="py-10" />
-          ) : assets.length === 0 ? (
+          ) : assetList.length === 0 ? (
             <div className="text-center py-10">
               <Database className="w-12 h-12 text-slate-600 mx-auto mb-3" />
               <p className="text-slate-500">暂无数据资产，点击"登记新资产"开始</p>
@@ -286,15 +340,16 @@ export default function DataAssets() {
                   </tr>
                 </thead>
                 <tbody>
-                  {assets.map(asset => {
-                    const s = statusMap[asset.status ?? 'active'] ?? { label: asset.status, cls: 'badge-gray' }
-                    const lvl = asset.sensitivity_level ?? 3
+                  {assetList.map(asset => {
+                    const status = safeString(asset?.status, 'active')
+                    const s = statusMap[status] ?? { label: status, cls: 'badge-gray' }
+                    const lvl = safeNumber(asset?.sensitivity_level, 3)
                     return (
-                      <tr key={asset.id} className={selectedAsset?.id === asset.id ? 'bg-blue-900/20' : ''}>
-                        <td className="font-semibold text-slate-100">{asset.name}</td>
-                        <td><span className="badge badge-blue">{asset.industry}</span></td>
-                        <td className="font-mono text-cyan-400">{(asset.node_count ?? 0).toLocaleString()}</td>
-                        <td className="font-mono text-purple-400">{(asset.edge_count ?? 0).toLocaleString()}</td>
+                      <tr key={getId(asset)} className={selectedAssetId === getId(asset) ? 'bg-blue-900/20' : ''}>
+                        <td className="font-semibold text-slate-100">{safeString(asset?.name, '-')}</td>
+                        <td><span className="badge badge-blue">{INDUSTRY_LABELS[safeString(asset?.industry)] ?? safeString(asset?.industry, '-')}</span></td>
+                        <td className="font-mono text-cyan-400">{safeNumber(asset?.node_count ?? asset?.graph_snapshot?.node_count).toLocaleString()}</td>
+                        <td className="font-mono text-purple-400">{safeNumber(asset?.edge_count ?? asset?.graph_snapshot?.edge_count).toLocaleString()}</td>
                         <td>
                           <span className="font-semibold text-xs" style={{ color: sensitivityColor[lvl] }}>
                             L{lvl} {sensitivityLabel[lvl]}
@@ -325,7 +380,7 @@ export default function DataAssets() {
           ) : (
             <div className="space-y-4">
               <div className="flex items-start justify-between">
-                <h2 className="text-base font-bold text-slate-100">{selectedAsset.name}</h2>
+                <h2 className="text-base font-bold text-slate-100">{safeString(selectedAsset?.name, '未命名资产')}</h2>
                 <button onClick={() => { setSelectedAsset(null); setGraphData(null) }} className="text-slate-500 hover:text-slate-300">
                   <X className="w-4 h-4" />
                 </button>
@@ -334,7 +389,7 @@ export default function DataAssets() {
               {/* Meta info */}
               <div className="space-y-2 text-sm">
                 {[
-                  ['行业', selectedAsset.industry],
+                  ['行业', INDUSTRY_LABELS[safeString(selectedAsset.industry)] ?? safeString(selectedAsset.industry)],
                   ['数据来源', selectedAsset.data_source],
                   ['主体类型', selectedAsset.subject_type],
                   ['节点含义', selectedAsset.node_meaning],
@@ -349,8 +404,8 @@ export default function DataAssets() {
                 ) : null)}
                 <div className="flex gap-2">
                   <span className="text-slate-500 w-20">敏感度</span>
-                  <span style={{ color: sensitivityColor[selectedAsset.sensitivity_level ?? 3] }}>
-                    L{selectedAsset.sensitivity_level} {sensitivityLabel[selectedAsset.sensitivity_level ?? 3]}
+                  <span style={{ color: sensitivityColor[safeNumber(selectedAsset.sensitivity_level, 3)] }}>
+                    L{safeNumber(selectedAsset.sensitivity_level, 3)} {sensitivityLabel[safeNumber(selectedAsset.sensitivity_level, 3)]}
                   </span>
                 </div>
               </div>
@@ -373,7 +428,7 @@ export default function DataAssets() {
               {selectedAsset.chain_record && (
                 <div>
                   <p className="text-xs text-slate-500 mb-1">链上记录</p>
-                  <p className="hash-display text-emerald-400">{selectedAsset.chain_record.slice(0, 40)}...</p>
+                  <p className="hash-display text-emerald-400">{chainRecordText ? `${chainRecordText.slice(0, 40)}...` : '-'}</p>
                 </div>
               )}
 
@@ -394,7 +449,7 @@ export default function DataAssets() {
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs text-slate-400">
                       <GitBranch className="w-3.5 h-3.5 inline mr-1" />
-                      {(graphData.nodes ?? []).length} 节点 · {(graphData.edges ?? []).length} 边
+                      {graphNodeCount} 节点 · {graphEdgeCount} 边
                     </p>
                     <button
                       className="btn btn-secondary text-xs py-1 px-2 gap-1"
@@ -417,11 +472,11 @@ export default function DataAssets() {
               )}
 
               {/* Compliance tags */}
-              {selectedAsset.compliance_tags && selectedAsset.compliance_tags.length > 0 && (
+              {complianceTags.length > 0 && (
                 <div>
                   <p className="text-xs text-slate-500 mb-1.5">合规标签</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {selectedAsset.compliance_tags.map(t => (
+                    {complianceTags.map(t => (
                       <span key={t} className="badge badge-purple">{t}</span>
                     ))}
                   </div>
@@ -433,40 +488,35 @@ export default function DataAssets() {
       </div>
 
       {/* Stats summary */}
-      {assets.length > 0 && (
+      {assetList.length > 0 && (
         <div className="card-glow p-5">
           <h2 className="section-header">资产统计</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="text-center">
-              <p className="text-2xl font-black text-blue-400">{assets.length}</p>
+              <p className="text-2xl font-black text-blue-400">{assetList.length}</p>
               <p className="text-xs text-slate-500 mt-1">总资产数</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-black text-cyan-400">{assets.filter(a => a.status === 'active').length}</p>
+              <p className="text-2xl font-black text-cyan-400">{activeAssetCount}</p>
               <p className="text-xs text-slate-500 mt-1">已激活</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-black text-emerald-400">
-                {assets.reduce((s, a) => s + (a.node_count ?? 0), 0).toLocaleString()}
+                {totalNodes.toLocaleString()}
               </p>
               <p className="text-xs text-slate-500 mt-1">总节点数</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-black text-purple-400">
-                {assets.reduce((s, a) => s + (a.edge_count ?? 0), 0).toLocaleString()}
+                {totalEdges.toLocaleString()}
               </p>
               <p className="text-xs text-slate-500 mt-1">总边数</p>
             </div>
           </div>
           {/* Industry breakdown */}
           <div className="mt-4 flex flex-wrap gap-2">
-            {Object.entries(
-              assets.reduce((acc, a) => {
-                acc[a.industry] = (acc[a.industry] ?? 0) + 1
-                return acc
-              }, {} as Record<string, number>)
-            ).map(([ind, cnt]) => (
-              <span key={ind} className="badge badge-blue">{ind} ({cnt})</span>
+            {industryBreakdown.map(([industry, count]) => (
+              <span key={industry} className="badge badge-blue">{INDUSTRY_LABELS[industry] ?? industry} ({count})</span>
             ))}
           </div>
         </div>

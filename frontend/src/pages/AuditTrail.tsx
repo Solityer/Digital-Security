@@ -5,29 +5,34 @@ import {
 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { getAuditLogs, verifyAuditChain, tamperAuditDemo } from '../api/endpoints'
+import { getId, getTimestamp, safeString, toArray, toObject } from '../api/normalizers'
 import dayjs from 'dayjs'
 
 interface AuditLog {
-  id: string
-  timestamp: string
-  username: string
+  id?: string
+  log_id?: string
+  timestamp?: string
+  created_at?: string
+  username?: string
   role?: string
-  action: string
+  action?: string
   target?: string
-  result: string
+  target_type?: string
+  target_id?: string
+  result?: string
   log_hash?: string
   prev_hash?: string
   chain_valid?: boolean
 }
 
 interface ChainVerifyResult {
-  valid: boolean
-  total_logs?: number
-  verified_logs?: number
-  broken_at?: string
-  broken_log_id?: string
-  broken_index?: number
-  message?: string
+  is_valid?: boolean
+  chain_intact?: boolean
+  total_records?: number
+  valid_count?: number
+  invalid_count?: number
+  tampered_ids?: number[]
+  verified_at?: string
 }
 
 const RESULT_MAP: Record<string, { label: string; cls: string }> = {
@@ -35,6 +40,7 @@ const RESULT_MAP: Record<string, { label: string; cls: string }> = {
   allow:   { label: '允许', cls: 'badge-green' },
   deny:    { label: '拒绝', cls: 'badge-red' },
   error:   { label: '错误', cls: 'badge-red' },
+  failure: { label: '失败', cls: 'badge-red' },
   warning: { label: '警告', cls: 'badge-yellow' },
   tampered: { label: '已篡改', cls: 'badge-red' },
 }
@@ -49,7 +55,7 @@ function ChainIndicator({ logs }: { logs: AuditLog[] }) {
       {blocks.map((log, i) => {
         const isBroken = log.chain_valid === false
         return (
-          <div key={log.id} className="flex items-center gap-0.5">
+          <div key={getId(log) || `chain-${i}`} className="flex items-center gap-0.5">
             {i > 0 && (
               <div className={`w-4 h-0.5 ${isBroken ? 'bg-red-500' : 'bg-emerald-600/60'}`} />
             )}
@@ -77,6 +83,7 @@ function ChainIndicator({ logs }: { logs: AuditLog[] }) {
 export default function AuditTrail() {
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [verifyLoading, setVerifyLoading] = useState(false)
   const [tamperLoading, setTamperLoading] = useState(false)
   const [chainResult, setChainResult] = useState<ChainVerifyResult | null>(null)
@@ -92,6 +99,7 @@ export default function AuditTrail() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    setLoadError('')
     try {
       const params: Record<string, unknown> = {}
       if (filterUsername) params.username = filterUsername
@@ -100,8 +108,11 @@ export default function AuditTrail() {
       if (filterDateFrom) params.date_from = filterDateFrom
       if (filterDateTo)   params.date_to = filterDateTo
       const data = await getAuditLogs(params)
-      setLogs(data?.items ?? data?.logs ?? data ?? [])
-    } catch { setLogs([]) }
+      setLogs(toArray(data, ['items', 'logs']))
+    } catch (err: unknown) {
+      setLoadError(err instanceof Error ? err.message : '审计日志加载失败')
+      setLogs([])
+    }
     finally { setLoading(false) }
   }, [filterUsername, filterAction, filterResult, filterDateFrom, filterDateTo])
 
@@ -112,7 +123,7 @@ export default function AuditTrail() {
     setChainResult(null)
     try {
       const data = await verifyAuditChain()
-      setChainResult(data)
+      setChainResult(toObject<ChainVerifyResult>(data, {} as ChainVerifyResult))
     } catch {}
     finally { setVerifyLoading(false) }
   }
@@ -123,8 +134,9 @@ export default function AuditTrail() {
     setTamperError('')
     setChainResult(null)
     try {
-      const midIdx = Math.floor(logs.length / 2)
-      const logId = logs[midIdx]?.id
+      const logList = toArray<AuditLog>(logs)
+      const midIdx = Math.floor(logList.length / 2)
+      const logId = getId(logList[midIdx])
       if (!logId) throw new Error('无法找到日志')
       await tamperAuditDemo(logId)
       await load()
@@ -137,7 +149,18 @@ export default function AuditTrail() {
     finally { setTamperLoading(false) }
   }
 
-  const chainOk = chainResult?.valid
+  const logList = toArray<AuditLog>(logs)
+  const tamperedSet = new Set(toArray<number>(chainResult?.tampered_ids))
+  const displayLogs = logList.map((log) => {
+    const numericId = Number(getId(log))
+    return {
+      ...log,
+      chain_valid: tamperedSet.size > 0 && Number.isFinite(numericId)
+        ? !tamperedSet.has(numericId)
+        : log.chain_valid,
+    }
+  })
+  const chainOk = chainResult?.chain_intact ?? chainResult?.is_valid
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -163,6 +186,15 @@ export default function AuditTrail() {
           </button>
         </div>
       </div>
+
+      {loadError ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div className="flex items-center justify-between gap-4">
+            <span>{loadError}</span>
+            <button onClick={load} className="underline underline-offset-2">重试</button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Filter bar */}
       {showFilters && (
@@ -222,10 +254,10 @@ export default function AuditTrail() {
         {tamperError && <p className="alert-error mb-3">{tamperError}</p>}
 
         {/* Chain blocks visualization */}
-        {logs.length > 0 && (
+        {displayLogs.length > 0 && (
           <div className="mb-4">
-            <p className="text-xs text-slate-500 mb-2">日志区块链（最新 {Math.min(logs.length, 12)} 条）</p>
-            <ChainIndicator logs={logs} />
+            <p className="text-xs text-slate-500 mb-2">日志区块链（最新 {Math.min(displayLogs.length, 12)} 条）</p>
+            <ChainIndicator logs={displayLogs} />
           </div>
         )}
 
@@ -238,7 +270,7 @@ export default function AuditTrail() {
                   <CheckCircle2 className="w-5 h-5" /> 哈希链验证通过
                 </p>
                 <p className="text-sm mt-1 opacity-80">
-                  共验证 {chainResult.verified_logs ?? chainResult.total_logs ?? logs.length} 条日志，
+                  共验证 {chainResult.valid_count ?? chainResult.total_records ?? displayLogs.length} 条日志，
                   哈希链完整，无篡改记录。
                 </p>
               </div>
@@ -247,14 +279,11 @@ export default function AuditTrail() {
                 <p className="font-bold flex items-center gap-2">
                   <XCircle className="w-5 h-5" /> 哈希链验证失败 — 检测到篡改！
                 </p>
-                {chainResult.broken_log_id && (
+                {tamperedSet.size > 0 && (
                   <p className="text-sm mt-1 opacity-80">
-                    链断裂位置：第 {(chainResult.broken_index ?? 0) + 1} 条日志
-                    （ID: {chainResult.broken_log_id.slice(0, 16)}...）
+                    检测到 {chainResult.invalid_count ?? tamperedSet.size} 条异常日志，
+                    首个异常日志 ID：{String(Array.from(tamperedSet)[0] ?? '-')}
                   </p>
-                )}
-                {chainResult.message && (
-                  <p className="text-sm mt-0.5 opacity-70">{chainResult.message}</p>
                 )}
               </div>
             )}
@@ -267,13 +296,13 @@ export default function AuditTrail() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="section-header mb-0">
             审计日志
-            <span className="ml-2 text-slate-500 text-sm font-normal">({logs.length} 条)</span>
+            <span className="ml-2 text-slate-500 text-sm font-normal">({displayLogs.length} 条)</span>
           </h2>
         </div>
 
         {loading ? (
           <LoadingSpinner message="加载审计日志..." className="py-10" />
-        ) : logs.length === 0 ? (
+        ) : displayLogs.length === 0 ? (
           <div className="text-center py-10">
             <ScrollText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
             <p className="text-slate-500">暂无审计日志</p>
@@ -294,20 +323,21 @@ export default function AuditTrail() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log, idx) => {
-                  const r = RESULT_MAP[log.result] ?? { label: log.result, cls: 'badge-gray' }
+                {displayLogs.map((log, idx) => {
+                  const result = safeString(log.result, 'unknown')
+                  const r = RESULT_MAP[result] ?? { label: result, cls: 'badge-gray' }
                   const isTampered = log.chain_valid === false || log.result === 'tampered'
                   return (
-                    <tr key={log.id} className={isTampered ? 'bg-red-950/20' : ''}>
+                    <tr key={getId(log) || `log-${idx}`} className={isTampered ? 'bg-red-950/20' : ''}>
                       <td className="text-slate-500 text-xs">{idx + 1}</td>
                       <td className="font-mono text-xs text-slate-400">
-                        {log.timestamp ? dayjs(log.timestamp).format('MM-DD HH:mm:ss') : '-'}
+                        {getTimestamp(log) ? dayjs(getTimestamp(log)).format('MM-DD HH:mm:ss') : '-'}
                       </td>
-                      <td className="font-semibold text-slate-200">{log.username || '-'}</td>
-                      <td className="text-xs text-slate-400">{log.role || '-'}</td>
-                      <td className="text-slate-300 text-sm">{log.action || '-'}</td>
+                      <td className="font-semibold text-slate-200">{safeString(log.username, '-')}</td>
+                      <td className="text-xs text-slate-400">{safeString(log.role, '-')}</td>
+                      <td className="text-slate-300 text-sm">{safeString(log.action, '-')}</td>
                       <td className="text-slate-400 text-xs truncate max-w-32">
-                        {log.target || '-'}
+                        {safeString(log.target, `${safeString(log.target_type)}:${safeString(log.target_id)}`) || '-'}
                       </td>
                       <td>
                         <span className={`badge ${r.cls}`}>{r.label}</span>
@@ -332,15 +362,15 @@ export default function AuditTrail() {
       </div>
 
       {/* Stats */}
-      {logs.length > 0 && (
+      {displayLogs.length > 0 && (
         <div className="card-glow p-5">
           <h2 className="section-header">统计摘要</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: '总日志数', value: logs.length, color: '#3b82f6' },
-              { label: '成功操作', value: logs.filter(l => l.result === 'success' || l.result === 'allow').length, color: '#10b981' },
-              { label: '拒绝/失败', value: logs.filter(l => l.result === 'deny' || l.result === 'error').length, color: '#ef4444' },
-              { label: '独立用户', value: new Set(logs.map(l => l.username)).size, color: '#a78bfa' },
+              { label: '总日志数', value: displayLogs.length, color: '#3b82f6' },
+              { label: '成功操作', value: displayLogs.filter(l => ['success', 'allow'].includes(safeString(l.result))).length, color: '#10b981' },
+              { label: '拒绝/失败', value: displayLogs.filter(l => ['deny', 'error', 'failure'].includes(safeString(l.result))).length, color: '#ef4444' },
+              { label: '独立用户', value: new Set(displayLogs.map(l => safeString(l.username, '匿名用户'))).size, color: '#a78bfa' },
             ].map(m => (
               <div key={m.label} className="text-center rounded-lg p-3" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
                 <p className="text-2xl font-black font-mono" style={{ color: m.color }}>{m.value}</p>

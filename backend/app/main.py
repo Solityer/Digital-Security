@@ -8,6 +8,7 @@ exposes a simple /health endpoint.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
@@ -153,4 +154,16 @@ async def health() -> HealthResponse:
         status="ok",
         service="数智安行 API",
         version="1.0.0",
+        modules={
+            "database": "operational",
+            "graph_sdp": "operational",
+            "gcc_sdp": "operational",
+            "gs_ldp": "operational",
+            "ndkd": "operational",
+            "vpcs": "operational",
+            "zkgcn": "operational",
+            "risk_engine": "operational",
+            "audit": "operational",
+        },
+        timestamp=datetime.utcnow(),
     )

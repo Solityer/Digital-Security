@@ -14,11 +14,27 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Contract, AuthorizationPolicy
+from app.models import Contract, AuthorizationPolicy, User
 from app.schemas import ContractCreate, ContractUpdate
 from app.services.audit_service import create_audit_log
 
 router = APIRouter()
+
+
+async def _get_default_user_ids(db: AsyncSession) -> tuple[int | None, int | None]:
+    provider_row = await db.execute(select(User).where(User.username == "admin").limit(1))
+    consumer_row = await db.execute(select(User).where(User.username == "demo").limit(1))
+    provider = provider_row.scalar_one_or_none()
+    consumer = consumer_row.scalar_one_or_none()
+    return provider.id if provider else None, consumer.id if consumer else None
+
+
+async def _get_usernames(db: AsyncSession, ids: list[int | None]) -> dict[int, str]:
+    wanted_ids = [user_id for user_id in ids if user_id is not None]
+    if not wanted_ids:
+        return {}
+    rows = await db.execute(select(User).where(User.id.in_(wanted_ids)))
+    return {user.id: user.username for user in rows.scalars().all()}
 
 
 # ---------------------------------------------------------------------------
@@ -43,14 +59,17 @@ async def create_contract(
 ) -> dict:
     """Create a new data-sharing contract (starts as draft) and its AuthorizationPolicy."""
     ts = datetime.utcnow().isoformat()
+    default_provider_id, default_consumer_id = await _get_default_user_ids(db)
+    provider_id = body.provider_id if body.provider_id is not None else default_provider_id
+    consumer_id = body.consumer_id if body.consumer_id is not None else default_consumer_id
     contract_hash = body.contract_hash or _make_contract_hash(
-        body.title, body.provider_id, body.consumer_id, ts
+        body.title, provider_id, consumer_id, ts
     )
 
     contract = Contract(
         title=body.title,
-        provider_id=body.provider_id,
-        consumer_id=body.consumer_id,
+        provider_id=provider_id,
+        consumer_id=consumer_id,
         purpose=body.purpose,
         valid_from=body.valid_from,
         valid_until=body.valid_until,
@@ -67,7 +86,7 @@ async def create_contract(
     # Create default AuthorizationPolicy
     policy = AuthorizationPolicy(
         contract_id=contract.id,
-        user_id=body.consumer_id,
+        user_id=consumer_id,
         asset_id=None,
         rbac_roles=["analyst"],
         abac_attrs={},
@@ -88,14 +107,21 @@ async def create_contract(
             "title": contract.title,
             "status": contract.status,
             "contract_hash": contract_hash,
+            "provider_id": provider_id,
+            "consumer_id": consumer_id,
         },
     )
 
+    user_names = await _get_usernames(db, [provider_id, consumer_id])
+
     return {
         "id": contract.id,
+        "contract_id": contract.id,
         "title": contract.title,
         "provider_id": contract.provider_id,
         "consumer_id": contract.consumer_id,
+        "provider": user_names.get(contract.provider_id or -1, f"机构#{contract.provider_id}" if contract.provider_id else "未指定"),
+        "consumer": user_names.get(contract.consumer_id or -1, f"机构#{contract.consumer_id}" if contract.consumer_id else "未指定"),
         "purpose": contract.purpose,
         "valid_from": contract.valid_from,
         "valid_until": contract.valid_until,
@@ -137,12 +163,20 @@ async def list_contracts(
     rows = await db.execute(stmt)
     contracts = rows.scalars().all()
 
+    user_names = await _get_usernames(
+        db,
+        [value for contract in contracts for value in (contract.provider_id, contract.consumer_id)],
+    )
+
     items = [
         {
             "id": c.id,
+            "contract_id": c.id,
             "title": c.title,
             "provider_id": c.provider_id,
             "consumer_id": c.consumer_id,
+            "provider": user_names.get(c.provider_id or -1, f"机构#{c.provider_id}" if c.provider_id else "未指定"),
+            "consumer": user_names.get(c.consumer_id or -1, f"机构#{c.consumer_id}" if c.consumer_id else "未指定"),
             "purpose": c.purpose,
             "valid_from": c.valid_from,
             "valid_until": c.valid_until,
@@ -187,11 +221,16 @@ async def get_contract(
         for p in policy_rows.scalars().all()
     ]
 
+    user_names = await _get_usernames(db, [contract.provider_id, contract.consumer_id])
+
     return {
         "id": contract.id,
+        "contract_id": contract.id,
         "title": contract.title,
         "provider_id": contract.provider_id,
         "consumer_id": contract.consumer_id,
+        "provider": user_names.get(contract.provider_id or -1, f"机构#{contract.provider_id}" if contract.provider_id else "未指定"),
+        "consumer": user_names.get(contract.consumer_id or -1, f"机构#{contract.consumer_id}" if contract.consumer_id else "未指定"),
         "purpose": contract.purpose,
         "valid_from": contract.valid_from,
         "valid_until": contract.valid_until,
@@ -239,7 +278,7 @@ async def _transition_contract(
         detail={"old_status": current, "new_status": new_status},
     )
 
-    return {"id": contract.id, "title": contract.title, "status": contract.status,
+    return {"id": contract.id, "contract_id": contract.id, "title": contract.title, "status": contract.status,
             "updated_at": contract.updated_at}
 
 
@@ -299,7 +338,7 @@ async def terminate_contract(
         detail={"old_status": old_status},
     )
 
-    return {"id": contract.id, "title": contract.title, "status": "terminated",
+    return {"id": contract.id, "contract_id": contract.id, "title": contract.title, "status": "terminated",
             "updated_at": contract.updated_at}
 
 

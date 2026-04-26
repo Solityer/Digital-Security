@@ -59,6 +59,8 @@ class HealthResponse(BaseModel):
     status: str
     service: str
     version: str
+    modules: dict[str, str] = Field(default_factory=dict)
+    timestamp: datetime | None = None
 
 
 # ===========================================================================
@@ -343,6 +345,7 @@ class GraphSDPRequest(BaseModel):
     asset_id: int | None = None
     created_by: int | None = None
     epsilon: float = Field(1.0, gt=0, description="Privacy budget ε")
+    L: int = Field(10, ge=1, le=50, description="Shuffle grouping parameter")
     delta: float = Field(1e-5, gt=0, description="Relaxation parameter δ")
     sensitivity: float = Field(1.0, gt=0, description="Global sensitivity")
     noise_mechanism: str = Field("gaussian", pattern="^(gaussian|laplace)$")
@@ -468,6 +471,13 @@ class VPCSQueryResponse(_ORMBase):
     tampered: bool
     created_by: int | None
     created_at: datetime
+    elapsed_ms: float | None = None
+    explanation_steps: list[dict[str, Any]] = Field(default_factory=list)
+    path: list[str] = Field(default_factory=list)
+    distance: float | None = None
+    cost: float | None = None
+    time: float | None = None
+    encrypted_graph: dict[str, Any] = Field(default_factory=dict)
 
 
 # ===========================================================================
@@ -523,6 +533,9 @@ class ZKGCNResponse(_ORMBase):
     proof_size_kb: float
     created_by: int | None
     created_at: datetime
+    explanation_steps: list[dict[str, Any]] = Field(default_factory=list)
+    predicted_class: int | None = None
+    class_name: str | None = None
 
 
 # ===========================================================================

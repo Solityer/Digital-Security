@@ -6,17 +6,21 @@ import {
 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { getRisks, evaluateRisk, getRiskReport } from '../api/endpoints'
+import { getId, safeNumber, safeString, toArray, toObject } from '../api/normalizers'
 import dayjs from 'dayjs'
 
 interface RiskEvent {
+  id?: string
   risk_id?: string
   event_type?: string
   description?: string
   severity?: string
   status?: string
   detected_at?: string
+  created_at?: string
   asset_id?: string
   score?: number
+  risk_score?: number
 }
 
 interface RiskReport {
@@ -117,6 +121,7 @@ function buildTrendOption(trendData: { date: string; score: number }[]) {
 export default function RiskMonitor() {
   const [risks, setRisks] = useState<RiskEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [evalLoading, setEvalLoading] = useState(false)
   const [reportLoading, setReportLoading] = useState(false)
   const [riskScore, setRiskScore] = useState(42)
@@ -126,18 +131,24 @@ export default function RiskMonitor() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    setLoadError('')
     try {
       const data = await getRisks()
-      const riskList: RiskEvent[] = data?.risks ?? data ?? []
+      const riskList = toArray<RiskEvent>(data, ['items', 'risks'])
       setRisks(riskList)
       // Compute score from events
       if (riskList.length > 0) {
         const weights: Record<string, number> = { critical: 25, high: 15, medium: 8, low: 3, info: 1 }
-        const raw = riskList.reduce((s, r) => s + (weights[r.severity ?? 'info'] ?? 1), 0)
+        const raw = riskList.reduce((s, r) => s + (weights[safeString(r.severity, 'info')] ?? 1), 0)
         setRiskScore(Math.min(100, raw))
       }
-      if (data?.risk_score != null) setRiskScore(data.risk_score)
-      if (data?.trend) setTrendData(data.trend)
+      if (data?.risk_score != null) setRiskScore(safeNumber(data.risk_score))
+      if (Array.isArray(data?.trend)) {
+        setTrendData(toArray(data.trend).map((item) => ({
+          date: safeString(item?.date, '-'),
+          score: safeNumber(item?.score ?? item?.count),
+        })))
+      }
       else {
         // Generate mock trend
         const now = dayjs()
@@ -146,7 +157,10 @@ export default function RiskMonitor() {
           score: Math.round(30 + Math.random() * 40),
         })))
       }
-    } catch { setRisks([]) }
+    } catch (err: unknown) {
+      setLoadError(err instanceof Error ? err.message : '风险事件加载失败')
+      setRisks([])
+    }
     finally { setLoading(false) }
   }, [])
 
@@ -155,9 +169,21 @@ export default function RiskMonitor() {
   const handleEvaluate = async () => {
     setEvalLoading(true)
     try {
-      const data = await evaluateRisk({})
-      if (data?.risk_score != null) setRiskScore(data.risk_score)
-      if (data?.risks) setRisks(data.risks)
+      const data = await evaluateRisk({
+        event_type: 'anomaly_access',
+        context: {
+          access_frequency: 120,
+          frequency_threshold: 100,
+          authorization: 'valid',
+          privacy_budget_used: 1.2,
+          privacy_budget_limit: 1.0,
+          verify_result: true,
+          quality_score: 0.84,
+          contract_status: 'active',
+        },
+      })
+      if (data?.risk_score != null) setRiskScore(safeNumber(data.risk_score))
+      await load()
     } catch {}
     finally { setEvalLoading(false) }
   }
@@ -166,19 +192,20 @@ export default function RiskMonitor() {
     setReportLoading(true)
     try {
       const data = await getRiskReport()
-      setReport(data)
+      setReport(toObject<RiskReport>(data, {} as RiskReport))
       setShowReport(true)
     } catch {}
     finally { setReportLoading(false) }
   }
 
-  const sortedRisks = [...risks].sort((a, b) =>
-    (SEVERITY_MAP[a.severity ?? 'info']?.order ?? 99) - (SEVERITY_MAP[b.severity ?? 'info']?.order ?? 99)
+  const riskList = toArray<RiskEvent>(risks)
+  const sortedRisks = [...riskList].sort((a, b) =>
+    (SEVERITY_MAP[safeString(a.severity, 'info')]?.order ?? 99) - (SEVERITY_MAP[safeString(b.severity, 'info')]?.order ?? 99)
   )
 
-  const openCount = risks.filter(r => r.status === 'open').length
-  const criticalCount = risks.filter(r => r.severity === 'critical').length
-  const highCount = risks.filter(r => r.severity === 'high').length
+  const openCount = riskList.filter(r => safeString(r.status) === 'open').length
+  const criticalCount = riskList.filter(r => safeString(r.severity) === 'critical').length
+  const highCount = riskList.filter(r => safeString(r.severity) === 'high').length
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -202,6 +229,15 @@ export default function RiskMonitor() {
           </button>
         </div>
       </div>
+
+      {loadError ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div className="flex items-center justify-between gap-4">
+            <span>{loadError}</span>
+            <button onClick={load} className="underline underline-offset-2">重试</button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Top row: Gauge + Trend + Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -236,7 +272,7 @@ export default function RiskMonitor() {
               { label: '待处理事件', value: openCount, color: '#ef4444', icon: AlertTriangle },
               { label: '严重事件', value: criticalCount, color: '#f97316', icon: AlertTriangle },
               { label: '高危事件', value: highCount, color: '#f59e0b', icon: TrendingUp },
-              { label: '事件总数', value: risks.length, color: '#3b82f6', icon: Shield },
+              { label: '事件总数', value: riskList.length, color: '#3b82f6', icon: Shield },
             ].map(({ label, value, color, icon: Icon }) => (
               <div key={label} className="flex items-center justify-between rounded-lg px-3 py-2"
                 style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid #1e293b' }}>
@@ -306,23 +342,24 @@ export default function RiskMonitor() {
               </thead>
               <tbody>
                 {sortedRisks.map((risk, i) => {
-                  const sev = SEVERITY_MAP[risk.severity ?? 'info'] ?? SEVERITY_MAP.info
-                  const st  = STATUS_MAP[risk.status ?? 'open'] ?? { label: risk.status, cls: 'badge-gray' }
+                  const sev = SEVERITY_MAP[safeString(risk.severity, 'info')] ?? SEVERITY_MAP.info
+                  const status = safeString(risk.status, 'open')
+                  const st  = STATUS_MAP[status] ?? { label: status, cls: 'badge-gray' }
                   return (
-                    <tr key={risk.risk_id ?? i}>
+                    <tr key={getId(risk) || `risk-${i}`}>
                       <td className="font-mono text-xs text-slate-400">
-                        {risk.detected_at ? dayjs(risk.detected_at).format('MM-DD HH:mm:ss') : '-'}
+                        {risk.detected_at || risk.created_at ? dayjs(risk.detected_at ?? risk.created_at).format('MM-DD HH:mm:ss') : '-'}
                       </td>
                       <td className="text-slate-200 font-medium">{risk.event_type ?? '-'}</td>
                       <td className="text-slate-400 text-xs max-w-48 truncate">{risk.description ?? '-'}</td>
                       <td><span className={`badge ${sev.cls}`}>{sev.label}</span></td>
                       <td><span className={`badge ${st.cls}`}>{st.label}</span></td>
                       <td>
-                        {risk.score != null && (
+                        {risk.score != null || risk.risk_score != null ? (
                           <span className="font-mono text-sm font-bold" style={{ color: sev.color }}>
-                            {risk.score.toFixed(1)}
+                            {safeNumber(risk.score ?? risk.risk_score).toFixed(1)}
                           </span>
-                        )}
+                        ) : '-'}
                       </td>
                     </tr>
                   )
@@ -366,11 +403,11 @@ export default function RiskMonitor() {
                   </div>
                 ))}
               </div>
-              {report.recommendations && report.recommendations.length > 0 && (
+              {toArray(report.recommendations).length > 0 && (
                 <div>
                   <p className="section-header">安全建议</p>
                   <ul className="space-y-2">
-                    {report.recommendations.map((rec, i) => (
+                    {toArray(report.recommendations).map((rec, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                         {rec}

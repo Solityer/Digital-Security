@@ -9,6 +9,7 @@ import ZKGCNPage from './pages/ZKGCNPage'
 import RiskMonitor from './pages/RiskMonitor'
 import AuditTrail from './pages/AuditTrail'
 import ScenarioDemo from './pages/ScenarioDemo'
+import SystemDiagnostics from './pages/SystemDiagnostics'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/risks"     element={<RiskMonitor />} />
         <Route path="/audit"     element={<AuditTrail />} />
         <Route path="/scenarios" element={<ScenarioDemo />} />
+        <Route path="/diagnostics" element={<SystemDiagnostics />} />
       </Routes>
     </Layout>
   )

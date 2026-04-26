@@ -1,0 +1,13 @@
+
+> digital-security-frontend@1.0.0 dev
+> vite --host 0.0.0.0 --port 3000 --strictPort
+
+
+  VITE v5.4.21  ready in 106 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.31.160:3000/
+  ➜  Network: http://100.119.39.38:3000/
+19:06:11 [vite] hmr update /src/pages/PrivacyLab.tsx, /src/styles/globals.css
+19:06:11 [vite] hmr update /src/pages/VPCSQuery.tsx, /src/styles/globals.css
+19:06:11 [vite] hmr update /src/pages/ZKGCNPage.tsx, /src/styles/globals.css

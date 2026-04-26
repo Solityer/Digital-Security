@@ -54,7 +54,7 @@ async def _run_and_save(
     db: AsyncSession,
     body: VPCSQueryRequest,
     tampered: bool = False,
-) -> VPCSQuery:
+) -> dict:
     graph_dict = await _load_graph(db, body.asset_id)
 
     result = run_vpcs_query(
@@ -116,7 +116,40 @@ async def _run_and_save(
         user_id=body.created_by,
     )
 
-    return query
+    return {
+        "id": query.id,
+        "asset_id": query.asset_id,
+        "source_node": query.source_node,
+        "target_node": query.target_node,
+        "cost_threshold": query.cost_threshold,
+        "time_threshold": query.time_threshold,
+        "distance_constraint": query.distance_constraint,
+        "budget": query.budget,
+        "encrypted_graph_summary": query.encrypted_graph_summary,
+        "candidate_path_count": query.candidate_path_count,
+        "dummy_edge_count": query.dummy_edge_count,
+        "result_path": query.result_path,
+        "result_distance": query.result_distance,
+        "result_cost": query.result_cost,
+        "result_time": query.result_time,
+        "proof_hash": query.proof_hash,
+        "verify_result": query.verify_result,
+        "tampered": query.tampered,
+        "created_by": query.created_by,
+        "created_at": query.created_at,
+        "elapsed_ms": result["elapsed_ms"],
+        "explanation_steps": result["explanation_steps"],
+        "path": query.result_path,
+        "distance": query.result_distance,
+        "cost": query.result_cost,
+        "time": query.result_time,
+        "encrypted_graph": {
+            "node_count": result["encrypted_graph_summary"].get("node_count"),
+            "real_edges": max(0, result["encrypted_graph_summary"].get("edge_count", 0) - query.dummy_edge_count),
+            "dummy_edges": query.dummy_edge_count,
+            "matrix_checksum": result["encrypted_graph_summary"].get("master_hash"),
+        },
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -128,7 +161,7 @@ async def _run_and_save(
 async def vpcs_query(
     body: VPCSQueryRequest,
     db: AsyncSession = Depends(get_db),
-) -> VPCSQuery:
+) -> dict:
     """
     Execute a Verifiable Private Constrained Shortest-path query.
 
@@ -142,7 +175,7 @@ async def vpcs_query(
 async def vpcs_tamper_demo(
     body: VPCSQueryRequest,
     db: AsyncSession = Depends(get_db),
-) -> VPCSQuery:
+) -> dict:
     """
     Demo endpoint: run a VPCS query with a deliberately corrupted proof.
 

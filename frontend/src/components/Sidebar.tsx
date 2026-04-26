@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   ScrollText,
   Theater,
+  Stethoscope,
 } from 'lucide-react'
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { path: '/risks',     icon: AlertTriangle,   label: '风险监控预警' },
   { path: '/audit',     icon: ScrollText,      label: '审计追踪' },
   { path: '/scenarios', icon: Theater,         label: '行业场景演示' },
+  { path: '/diagnostics', icon: Stethoscope,   label: '系统诊断' },
 ]
 
 export default function Sidebar() {

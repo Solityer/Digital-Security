@@ -142,6 +142,7 @@ async def create_asset(
 
     return {
         "id": asset.id,
+        "asset_id": asset.id,
         "name": asset.name,
         "industry": asset.industry,
         "description": asset.description,
@@ -152,6 +153,8 @@ async def create_asset(
         "created_at": asset.created_at,
         "updated_at": asset.updated_at,
         "graph_snapshot_id": asset.graph_snapshot_id,
+        "node_count": snap.node_count,
+        "edge_count": snap.edge_count,
         "data_source": asset.data_source,
         "subject_type": asset.subject_type,
         "node_meaning": asset.node_meaning,
@@ -187,9 +190,18 @@ async def list_assets(
     rows = await db.execute(stmt)
     assets = rows.scalars().all()
 
+    snapshot_ids = [a.graph_snapshot_id for a in assets if a.graph_snapshot_id is not None]
+    snapshots_by_id: dict[int, GraphSnapshot] = {}
+    if snapshot_ids:
+        snapshot_rows = await db.execute(
+            select(GraphSnapshot).where(GraphSnapshot.id.in_(snapshot_ids))
+        )
+        snapshots_by_id = {snapshot.id: snapshot for snapshot in snapshot_rows.scalars().all()}
+
     items = [
         {
             "id": a.id,
+            "asset_id": a.id,
             "name": a.name,
             "industry": a.industry,
             "description": a.description,
@@ -201,6 +213,8 @@ async def list_assets(
             "sensitivity_level": a.sensitivity_level,
             "compliance_tags": a.compliance_tags,
             "owner_id": a.owner_id,
+            "node_count": snapshots_by_id.get(a.graph_snapshot_id).node_count if snapshots_by_id.get(a.graph_snapshot_id) else 0,
+            "edge_count": snapshots_by_id.get(a.graph_snapshot_id).edge_count if snapshots_by_id.get(a.graph_snapshot_id) else 0,
             "created_at": a.created_at,
             "updated_at": a.updated_at,
         }
@@ -239,6 +253,7 @@ async def get_asset(
 
     return {
         "id": asset.id,
+        "asset_id": asset.id,
         "name": asset.name,
         "industry": asset.industry,
         "description": asset.description,
@@ -255,6 +270,8 @@ async def get_asset(
         "authorization_scope": asset.authorization_scope,
         "compliance_tags": asset.compliance_tags,
         "owner_id": asset.owner_id,
+        "node_count": snap_data["node_count"] if snap_data else 0,
+        "edge_count": snap_data["edge_count"] if snap_data else 0,
         "created_at": asset.created_at,
         "updated_at": asset.updated_at,
         "graph_snapshot": snap_data,
@@ -312,6 +329,12 @@ async def generate_graph_snapshot(
         "edge_count": snap.edge_count,
         "created_at": snap.created_at,
         "graph_stats": stats,
+        "graph": {
+            "nodes": snap.nodes,
+            "edges": snap.edges,
+            "node_count": snap.node_count,
+            "edge_count": snap.edge_count,
+        },
     }
 
 

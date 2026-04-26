@@ -5,6 +5,8 @@ import {
 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { getContracts, createContract, activateContract, evaluateAuthz } from '../api/endpoints'
+import { getId, safeString, toArray } from '../api/normalizers'
+import { num } from '../utils/safe'
 import dayjs from 'dayjs'
 
 const ROLES = ['数据提供方', '数据使用方', '监管机构', '审计员', '平台管理员', '研究员', '普通用户']
@@ -20,8 +22,11 @@ const CONTRACT_STATUS: Record<string, { label: string; cls: string }> = {
 }
 
 interface Contract {
+  id?: string
   contract_id: string
   title: string
+  provider_id?: number | string
+  consumer_id?: number | string
   provider: string
   consumer: string
   purpose: string
@@ -38,12 +43,24 @@ interface AuthzResult {
   allowed: boolean
   reason?: string
   matched_rule?: string
+  matched_policy_id?: number
   details?: Record<string, unknown>
+}
+
+const ROLE_MAP: Record<string, string> = {
+  数据提供方: 'admin',
+  数据使用方: 'analyst',
+  监管机构: 'auditor',
+  审计员: 'auditor',
+  平台管理员: 'admin',
+  研究员: 'analyst',
+  普通用户: 'demo',
 }
 
 export default function Contracts() {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
@@ -75,10 +92,12 @@ export default function Contracts() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    setLoadError('')
     try {
       const data = await getContracts()
-      setContracts(data?.contracts ?? data ?? [])
-    } catch {
+      setContracts(toArray(data, ['items', 'contracts']))
+    } catch (err: unknown) {
+      setLoadError(err instanceof Error ? err.message : '合约列表加载失败')
       setContracts([])
     } finally {
       setLoading(false)
@@ -118,14 +137,30 @@ export default function Contracts() {
     try {
       let parsedAttrs: Record<string, unknown> = {}
       try { parsedAttrs = JSON.parse(authzForm.user_attrs) } catch {}
+      const assetId = num(authzForm.asset_id, NaN)
+      if (!Number.isFinite(assetId) || assetId <= 0) {
+        throw new Error('请输入有效的资产 ID')
+      }
       const result = await evaluateAuthz({
-        user_role: authzForm.user_role,
-        user_attrs: parsedAttrs,
-        asset_id: authzForm.asset_id,
+        user_id: num(selectedContract?.consumer_id, undefined as unknown as number),
+        asset_id: assetId,
         operation: authzForm.operation,
-        contract_id: selectedContract?.contract_id,
+        context_attrs: {
+          ...parsedAttrs,
+          role: ROLE_MAP[authzForm.user_role] ?? 'analyst',
+          username: safeString(selectedContract?.consumer, 'demo'),
+          contract_id: safeString(selectedContract?.contract_id),
+        },
       })
-      setAuthzResult(result)
+      setAuthzResult({
+        ...result,
+        matched_rule: result?.matched_policy_id ? `策略 #${result.matched_policy_id}` : undefined,
+        details: {
+          asset_id: assetId,
+          user_role: ROLE_MAP[authzForm.user_role] ?? 'analyst',
+          contract_id: safeString(selectedContract?.contract_id, '-'),
+        },
+      })
     } catch (err: unknown) {
       setAuthzError(err instanceof Error ? err.message : '评估失败')
     } finally {
@@ -141,6 +176,9 @@ export default function Contracts() {
         : [...(f[list] as string[]), val],
     }))
   }
+
+  const contractList = toArray<Contract>(contracts)
+  const selectedContractId = getId(selectedContract)
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -158,6 +196,15 @@ export default function Contracts() {
           </button>
         </div>
       </div>
+
+      {loadError ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div className="flex items-center justify-between gap-4">
+            <span>{loadError}</span>
+            <button onClick={load} className="underline underline-offset-2">重试</button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Create form modal */}
       {showForm && (
@@ -239,7 +286,7 @@ export default function Contracts() {
           <h2 className="section-header">合约列表</h2>
           {loading ? (
             <LoadingSpinner message="加载合约..." className="py-10" />
-          ) : contracts.length === 0 ? (
+          ) : contractList.length === 0 ? (
             <div className="text-center py-10">
               <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
               <p className="text-slate-500 text-sm">暂无合约，点击"新建合约"创建</p>
@@ -258,32 +305,34 @@ export default function Contracts() {
                   </tr>
                 </thead>
                 <tbody>
-                  {contracts.map(c => {
-                    const s = CONTRACT_STATUS[c.status] ?? { label: c.status, cls: 'badge-gray' }
+                  {contractList.map(c => {
+                    const status = safeString(c?.status, 'draft')
+                    const s = CONTRACT_STATUS[status] ?? { label: status, cls: 'badge-gray' }
+                    const contractId = getId(c)
                     return (
-                      <tr key={c.contract_id}
-                        className={`cursor-pointer ${selectedContract?.contract_id === c.contract_id ? 'bg-blue-900/20' : ''}`}
+                      <tr key={contractId}
+                        className={`cursor-pointer ${selectedContractId === contractId ? 'bg-blue-900/20' : ''}`}
                         onClick={() => setSelectedContract(c)}
                       >
-                        <td className="font-semibold text-slate-100 truncate max-w-36">{c.title}</td>
-                        <td className="text-slate-400 truncate max-w-24">{c.provider}</td>
-                        <td className="text-slate-400 truncate max-w-24">{c.consumer}</td>
+                        <td className="font-semibold text-slate-100 truncate max-w-36">{safeString(c?.title, '-')}</td>
+                        <td className="text-slate-400 truncate max-w-24">{safeString(c?.provider, safeString(c?.provider_id, '-'))}</td>
+                        <td className="text-slate-400 truncate max-w-24">{safeString(c?.consumer, safeString(c?.consumer_id, '-'))}</td>
                         <td className="text-xs text-slate-400 font-mono">
                           {c.valid_from ? dayjs(c.valid_from).format('YYYY-MM-DD') : '—'}<br />
                           {c.valid_until ? `至 ${dayjs(c.valid_until).format('YYYY-MM-DD')}` : ''}
                         </td>
                         <td><span className={`badge ${s.cls}`}>{s.label}</span></td>
                         <td>
-                          {c.status === 'pending' || c.status === 'draft' ? (
+                          {status === 'pending' || status === 'draft' ? (
                             <button
-                              onClick={e => { e.stopPropagation(); handleActivate(c.contract_id) }}
-                              disabled={activating === c.contract_id}
+                              onClick={e => { e.stopPropagation(); handleActivate(contractId) }}
+                              disabled={activating === contractId}
                               className="btn btn-success text-xs py-1 px-2 gap-1"
                             >
-                              {activating === c.contract_id ? <LoadingSpinner size="sm" /> : <Play className="w-3.5 h-3.5" />}
+                              {activating === contractId ? <LoadingSpinner size="sm" /> : <Play className="w-3.5 h-3.5" />}
                               激活
                             </button>
-                          ) : c.status === 'active' ? (
+                          ) : status === 'active' ? (
                             <span className="text-emerald-400 text-xs flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" /> 生效中
                             </span>
@@ -310,7 +359,7 @@ export default function Contracts() {
               <div className="space-y-2 text-sm">
                 <div className="flex gap-2">
                   <span className="text-slate-500 w-20">合约ID</span>
-                  <span className="hash-display text-xs">{selectedContract.contract_id.slice(0, 20)}...</span>
+                  <span className="hash-display text-xs">{safeString(getId(selectedContract)).slice(0, 20)}...</span>
                 </div>
                 {[
                   ['使用目的', selectedContract.purpose],
@@ -321,19 +370,19 @@ export default function Contracts() {
                     <span className="text-slate-300">{v}</span>
                   </div>
                 ) : null)}
-                {selectedContract.accessible_fields && selectedContract.accessible_fields.length > 0 && (
+                {toArray(selectedContract.accessible_fields).length > 0 && (
                   <div>
                     <p className="text-slate-500 mb-1">可访问字段</p>
                     <div className="flex flex-wrap gap-1">
-                      {selectedContract.accessible_fields.map(f => <span key={f} className="badge badge-cyan text-xs">{f}</span>)}
+                      {toArray(selectedContract.accessible_fields).map(f => <span key={f} className="badge badge-cyan text-xs">{f}</span>)}
                     </div>
                   </div>
                 )}
-                {selectedContract.allowed_algorithms && selectedContract.allowed_algorithms.length > 0 && (
+                {toArray(selectedContract.allowed_algorithms).length > 0 && (
                   <div>
                     <p className="text-slate-500 mb-1">允许算法</p>
                     <div className="flex flex-wrap gap-1">
-                      {selectedContract.allowed_algorithms.map(a => <span key={a} className="badge badge-purple text-xs">{a}</span>)}
+                      {toArray(selectedContract.allowed_algorithms).map(a => <span key={a} className="badge badge-purple text-xs">{a}</span>)}
                     </div>
                   </div>
                 )}
@@ -410,12 +459,12 @@ export default function Contracts() {
       </div>
 
       {/* Contract stats */}
-      {contracts.length > 0 && (
+      {contractList.length > 0 && (
         <div className="card-glow p-5">
           <h2 className="section-header">合约状态统计</h2>
           <div className="flex flex-wrap gap-3">
             {Object.entries(CONTRACT_STATUS).map(([status, { label, cls }]) => {
-              const cnt = contracts.filter(c => c.status === status).length
+              const cnt = contractList.filter(c => safeString(c?.status) === status).length
               return (
                 <div key={status} className={`badge ${cls} text-sm px-4 py-2`}>
                   {label}：{cnt}

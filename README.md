@@ -102,9 +102,56 @@ bash scripts/dev.sh
 ```
 
 启动后访问：
-- 前端界面：http://localhost:5173
+- 前端界面：http://127.0.0.1:3000
+- 系统诊断：http://127.0.0.1:3000/diagnostics
 - 后端 API 文档：http://localhost:8000/docs
 - 健康检查：http://localhost:8000/health
+
+### 一键停止、检查与烟雾验收
+
+```bash
+bash scripts/stop.sh
+bash scripts/check.sh
+bash scripts/smoke_api.sh
+```
+
+- `scripts/check.sh` 会同时生成 `logs/check.log` 与 `logs/network-diagnosis.log`
+- `scripts/smoke_api.sh` 会生成 `logs/smoke-api.log`，覆盖隐私算法、VPCS、zkGCN、风险、审计和场景接口
+
+### 外部访问 / WSL / 局域网说明
+
+- 前端 dev server 固定运行在 `0.0.0.0:3000`
+- 后端运行在 `0.0.0.0:8000`
+- 本机访问优先使用 `http://127.0.0.1:3000`
+- 局域网访问可通过 `hostname -I` 查询本机 IP，并使用 `http://<你的IP>:3000`
+- 如果在 WSL 或远程 Linux 环境中访问失败，优先检查宿主机防火墙、端口转发和代理设置
+
+### 推荐验收命令
+
+```bash
+cd /home/match/Digital-Security/backend
+.venv/bin/python -m compileall app
+.venv/bin/python -m pytest tests/ -v
+
+cd /home/match/Digital-Security/frontend
+npm run build
+
+cd /home/match/Digital-Security
+bash scripts/stop.sh
+bash scripts/dev.sh
+bash scripts/check.sh
+bash scripts/smoke_api.sh
+curl -I http://127.0.0.1:3000
+curl http://127.0.0.1:3000/health
+curl http://127.0.0.1:3000/api/assets
+curl http://127.0.0.1:8000/health
+```
+
+### 故障排查
+
+- 接口契约说明见 `docs/API_CONTRACT_CHECK.md`
+- 常见运行问题见 `docs/TROUBLESHOOTING.md`
+- 实时日志见 `logs/backend-dev.log`、`logs/frontend-dev.log`
 
 ---
 
@@ -248,8 +295,11 @@ Digital-Security/
 │       ├── visualizations/    # 图表可视化组件
 │       └── styles/            # 全局样式
 │
-├── scripts/                   # 启动脚本
-│   └── dev.sh                 # 一键启动前后端
+├── scripts/                   # 启动与验收脚本
+│   ├── dev.sh                 # 一键启动前后端
+│   ├── stop.sh                # 停止前后端进程
+│   ├── check.sh               # 健康检查 + 网络诊断
+│   └── smoke_api.sh           # 核心接口烟雾验收
 │
 └── data/                      # 示例数据
 ```

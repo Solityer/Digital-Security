@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import {
   getHealth, getAssets, getContracts, getAuditLogs, getRisks,
 } from '../api/endpoints'
+import { getId, safeNumber, safeString, toArray, toObject } from '../api/normalizers'
 import dayjs from 'dayjs'
 
 interface HealthData {
@@ -97,22 +98,28 @@ export default function Dashboard() {
   const [risks, setRisks] = useState<Risk[]>([])
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<string>('')
+  const [loadError, setLoadError] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
+    setLoadError('')
     try {
       const [h, a, c, al, r] = await Promise.allSettled([
         getHealth(), getAssets(), getContracts(),
         getAuditLogs({ limit: 10 }), getRisks(),
       ])
-      if (h.status === 'fulfilled') setHealth(h.value)
-      if (a.status === 'fulfilled') setAssets(a.value?.assets ?? a.value ?? [])
-      if (c.status === 'fulfilled') setContracts(c.value?.contracts ?? c.value ?? [])
+      if (h.status === 'fulfilled') setHealth(toObject(h.value, null))
+      if (a.status === 'fulfilled') setAssets(toArray(a.value, ['items', 'assets']))
+      if (c.status === 'fulfilled') setContracts(toArray(c.value, ['items', 'contracts']))
       if (al.status === 'fulfilled') {
-        const logs = al.value?.logs ?? al.value ?? []
-        setAuditLogs(Array.isArray(logs) ? logs.slice(0, 10) : [])
+        setAuditLogs(toArray(al.value, ['items', 'logs']).slice(0, 10))
       }
-      if (r.status === 'fulfilled') setRisks(r.value?.risks ?? r.value ?? [])
+      if (r.status === 'fulfilled') setRisks(toArray(r.value, ['items', 'risks']))
+
+      const failures = [h, a, c, al, r].filter((result) => result.status === 'rejected')
+      if (failures.length > 0) {
+        setLoadError(`部分数据加载失败，已回退显示可用内容（${failures.length}/5）`)
+      }
     } finally {
       setLoading(false)
       setLastRefresh(dayjs().format('HH:mm:ss'))
@@ -121,9 +128,14 @@ export default function Dashboard() {
 
   useEffect(() => { load() }, [load])
 
-  const totalNodes = assets.reduce((s, a) => s + (a.node_count ?? 0), 0)
-  const activeContracts = contracts.filter((c) => c.status === 'active').length
-  const criticalRisks = risks.filter((r) => r.severity === 'critical' || r.severity === 'high').length
+  const assetList = toArray<Asset>(assets)
+  const contractList = toArray<Contract>(contracts)
+  const auditLogList = toArray<AuditLog>(auditLogs)
+  const riskList = toArray<Risk>(risks)
+
+  const totalNodes = assetList.reduce((sum, asset) => sum + safeNumber(asset?.node_count), 0)
+  const activeContracts = contractList.filter((contract) => safeString(contract?.status) === 'active').length
+  const criticalRisks = riskList.filter((risk) => ['critical', 'high'].includes(safeString(risk?.severity))).length
 
   const modules = health?.modules ?? {}
 
@@ -152,7 +164,7 @@ export default function Dashboard() {
         <StatCard
           icon={<Database className="w-5 h-5" />}
           title="数据资产总数"
-          value={loading ? '-' : assets.length}
+          value={loading ? '-' : assetList.length}
           subtitle="已登记资产"
           color="blue"
           loading={loading}
@@ -168,7 +180,10 @@ export default function Dashboard() {
         <StatCard
           icon={<Cpu className="w-5 h-5" />}
           title="隐私计算任务"
-          value={loading ? '-' : auditLogs.filter(l => l.action?.includes('privacy') || l.action?.includes('sdp') || l.action?.includes('ldp')).length}
+          value={loading ? '-' : auditLogList.filter((log) => {
+            const action = safeString(log?.action).toLowerCase()
+            return action.includes('privacy') || action.includes('sdp') || action.includes('ldp')
+          }).length}
           subtitle="近期执行次数"
           color="purple"
           loading={loading}
@@ -177,8 +192,8 @@ export default function Dashboard() {
           icon={<CheckCircle2 className="w-5 h-5" />}
           title="验证成功率"
           value={loading ? '-' : (() => {
-            const total = auditLogs.length
-            const ok = auditLogs.filter(l => l.result === 'success' || l.result === 'allow').length
+            const total = auditLogList.length
+            const ok = auditLogList.filter((log) => ['success', 'allow'].includes(safeString(log?.result))).length
             return total > 0 ? `${Math.round(ok / total * 100)}%` : '-'
           })()}
           subtitle="审计日志统计"
@@ -197,11 +212,22 @@ export default function Dashboard() {
           icon={<FileText className="w-5 h-5" />}
           title="已生效合约"
           value={loading ? '-' : activeContracts}
-          subtitle={`共 ${contracts.length} 份合约`}
+          subtitle={`共 ${contractList.length} 份合约`}
           color="yellow"
           loading={loading}
         />
       </div>
+
+      {loadError ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <div className="flex items-center justify-between gap-4">
+            <span>{loadError}</span>
+            <button onClick={load} className="text-amber-100 underline underline-offset-2">
+              重试
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Quick actions */}
       <div className="card-glow p-5">
@@ -264,7 +290,7 @@ export default function Dashboard() {
           </div>
           {loading ? (
             <LoadingSpinner message="加载中..." className="py-6" />
-          ) : auditLogs.length === 0 ? (
+          ) : auditLogList.length === 0 ? (
             <p className="text-center text-slate-500 text-sm py-6">暂无审计日志</p>
           ) : (
             <div className="overflow-x-auto">
@@ -278,15 +304,16 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {auditLogs.map((log) => {
-                    const r = resultMap[log.result] ?? { label: log.result, cls: 'badge-gray' }
+                  {auditLogList.map((log, index) => {
+                    const result = safeString(log?.result, 'unknown')
+                    const r = resultMap[result] ?? { label: result, cls: 'badge-gray' }
                     return (
-                      <tr key={log.log_id}>
+                      <tr key={getId(log) || `audit-${index}`}>
                         <td className="font-mono text-xs text-slate-400">
                           {log.timestamp ? dayjs(log.timestamp).format('MM-DD HH:mm:ss') : '-'}
                         </td>
-                        <td className="font-medium text-slate-200">{log.username || '-'}</td>
-                        <td className="text-slate-300 truncate max-w-32">{log.action || '-'}</td>
+                        <td className="font-medium text-slate-200">{safeString(log?.username, '-')}</td>
+                        <td className="text-slate-300 truncate max-w-32">{safeString(log?.action, '-')}</td>
                         <td><span className={`badge ${r.cls}`}>{r.label}</span></td>
                       </tr>
                     )
@@ -307,7 +334,7 @@ export default function Dashboard() {
           </div>
           {loading ? (
             <LoadingSpinner message="加载中..." className="py-6" />
-          ) : contracts.length === 0 ? (
+          ) : contractList.length === 0 ? (
             <p className="text-center text-slate-500 text-sm py-6">暂无合约记录</p>
           ) : (
             <div className="overflow-x-auto">
@@ -321,13 +348,14 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {contracts.slice(0, 8).map((c) => {
-                    const s = contractStatusMap[c.status] ?? { label: c.status, cls: 'badge-gray' }
+                  {contractList.slice(0, 8).map((contract, index) => {
+                    const status = safeString(contract?.status, 'unknown')
+                    const s = contractStatusMap[status] ?? { label: status, cls: 'badge-gray' }
                     return (
-                      <tr key={c.contract_id}>
-                        <td className="font-medium text-slate-200 truncate max-w-36">{c.title}</td>
-                        <td className="text-slate-400 truncate max-w-24">{c.provider}</td>
-                        <td className="text-slate-400 truncate max-w-24">{c.consumer}</td>
+                      <tr key={getId(contract) || `contract-${index}`}>
+                        <td className="font-medium text-slate-200 truncate max-w-36">{safeString(contract?.title, '-')}</td>
+                        <td className="text-slate-400 truncate max-w-24">{safeString(contract?.provider, '-')}</td>
+                        <td className="text-slate-400 truncate max-w-24">{safeString(contract?.consumer, '-')}</td>
                         <td><span className={`badge ${s.cls}`}>{s.label}</span></td>
                       </tr>
                     )

@@ -75,7 +75,7 @@ export const evaluateRisk = (data: Record<string, unknown>) =>
   client.post('/api/risks/evaluate', data).then((r) => r.data)
 
 export const getRiskReport = () =>
-  client.get('/api/risks/report').then((r) => r.data)
+  client.post('/api/risks/report').then((r) => r.data)
 
 // ─── Scenarios ────────────────────────────────────────────────────────────────
 export const getDemoScenarios = () =>

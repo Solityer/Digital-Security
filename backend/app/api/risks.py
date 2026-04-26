@@ -65,6 +65,7 @@ async def list_risk_events(
         "items": [
             {
                 "id": e.id,
+                "risk_id": e.id,
                 "event_type": e.event_type if isinstance(e.event_type, str) else e.event_type.value,
                 "severity": e.severity if isinstance(e.severity, str) else e.severity.value,
                 "asset_id": e.asset_id,
@@ -72,8 +73,10 @@ async def list_risk_events(
                 "description": e.description,
                 "detail": e.detail,
                 "risk_score": e.risk_score,
+                "score": e.risk_score,
                 "status": e.status if isinstance(e.status, str) else e.status.value,
                 "created_at": e.created_at,
+                "detected_at": e.created_at,
             }
             for e in events
         ],
@@ -144,7 +147,43 @@ async def risk_report(
     Returns counts by severity and type, top assets with risks,
     7-day trend data, and open event counts.
     """
-    return await generate_risk_report(db)
+    raw = await generate_risk_report(db)
+    severity = raw.get("count_by_severity", {})
+    risk_score = min(
+        100,
+        severity.get("critical", 0) * 30
+        + severity.get("high", 0) * 18
+        + severity.get("medium", 0) * 10
+        + severity.get("low", 0) * 4,
+    )
+    recommendations: list[str] = []
+    if severity.get("critical", 0):
+        recommendations.append("优先处理严重与高危事件，重新验证相关证明与授权链路。")
+    if raw.get("open_events", 0):
+        recommendations.append("存在未关闭风险事件，建议在比赛演示前完成人工复核。")
+    if not recommendations:
+        recommendations.append("当前风险总体可控，建议继续保持周期性巡检。")
+    return {
+        **raw,
+        "critical_count": severity.get("critical", 0),
+        "high_count": severity.get("high", 0),
+        "medium_count": severity.get("medium", 0),
+        "low_count": severity.get("low", 0),
+        "risk_score": risk_score,
+        "summary": "系统风险报告已生成，可结合事件列表进行复核。",
+        "recommendations": recommendations,
+        "trend": [
+            {"date": item.get("date"), "score": min(100, item.get("count", 0) * 20)}
+            for item in raw.get("trend_data", [])
+        ],
+    }
+
+
+@router.get("/report")
+async def risk_report_get(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    return await risk_report(db)
 
 
 @router.get("/{event_id}")
@@ -160,6 +199,7 @@ async def get_risk_event(
 
     return {
         "id": event.id,
+        "risk_id": event.id,
         "event_type": event.event_type if isinstance(event.event_type, str) else event.event_type.value,
         "severity": event.severity if isinstance(event.severity, str) else event.severity.value,
         "asset_id": event.asset_id,
@@ -167,8 +207,10 @@ async def get_risk_event(
         "description": event.description,
         "detail": event.detail,
         "risk_score": event.risk_score,
+        "score": event.risk_score,
         "status": event.status if isinstance(event.status, str) else event.status.value,
         "created_at": event.created_at,
+        "detected_at": event.created_at,
     }
 
 

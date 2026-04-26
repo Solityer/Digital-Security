@@ -196,9 +196,30 @@ async def _ensure_demo_asset(
 @router.get("/scenarios")
 async def list_scenarios() -> dict:
     """List all available demo scenarios with their descriptions and steps."""
+    items = [
+        {
+            "id": key,
+            "key": key,
+            "scenario_key": key,
+            "scenario_id": key,
+            "name": value["title"],
+            "title": value["title"],
+            "description": value["description"],
+            "industry": "金融" if key == "finance" else "医疗" if key == "medical" else "政务",
+            "actors": {
+                "finance": ["银行A", "银行B", "监管机构", "平台"],
+                "medical": ["三甲医院", "研究机构", "卫健委", "平台"],
+                "government": ["政务中心", "企业", "审计方", "平台"],
+            }[key],
+            "technologies": value["key_features"],
+            "steps": value["steps"],
+        }
+        for key, value in _SCENARIOS.items()
+    ]
     return {
         "total": len(_SCENARIOS),
-        "scenarios": list(_SCENARIOS.values()),
+        "items": items,
+        "scenarios": items,
     }
 
 
@@ -517,9 +538,21 @@ async def run_scenario(
 
     return {
         "scenario": scenario,
+        "status": "success",
         "title": _SCENARIOS[scenario]["title"],
         "steps_completed": steps_completed,
         "results": results,
         "metrics": metrics,
         "elapsed_ms": elapsed_ms,
+        "duration_ms": elapsed_ms,
+        "message": f"{_SCENARIOS[scenario]['title']} 演示执行完成。",
+        "steps": [
+            {
+                "id": f"{scenario}-{index + 1}",
+                "name": step,
+                "description": step,
+                "status": "completed" if index < steps_completed else "pending",
+            }
+            for index, step in enumerate(_SCENARIOS[scenario]["steps"])
+        ],
     }

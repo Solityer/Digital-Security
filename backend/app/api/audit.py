@@ -67,6 +67,7 @@ async def list_audit_logs(
     items = [
         {
             "id": log.id,
+            "log_id": log.id,
             "timestamp": log.timestamp,
             "user_id": log.user_id,
             "username": log.username,
@@ -78,6 +79,7 @@ async def list_audit_logs(
             "detail": log.detail,
             "log_hash": log.log_hash,
             "prev_hash": log.prev_hash,
+            "target": f"{log.target_type}:{log.target_id}" if log.target_type or log.target_id else "",
             "created_at": log.created_at,
         }
         for log in logs

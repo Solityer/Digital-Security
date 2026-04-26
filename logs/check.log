@@ -1,0 +1,10 @@
+[PASS] 前端首页 | 8ms | http://127.0.0.1:3000 | <!DOCTYPE html> <html lang="zh-CN"> <head> <script type="module">import { injectIntoGlobalHook } from "/@react-refresh";
+[PASS] 前端诊断页 | 8ms | http://127.0.0.1:3000/diagnostics | <!DOCTYPE html> <html lang="zh-CN"> <head> <script type="module">import { injectIntoGlobalHook } from "/@react-refresh";
+[PASS] 前端代理健康检查 | 8ms | http://127.0.0.1:3000/health | {"status":"ok","service":"数智安行 API","version":"1.0.0","modules":{"database":"operational","graph_sdp":"operation
+[PASS] 后端健康检查 | 5ms | http://127.0.0.1:8000/health | {"status":"ok","service":"数智安行 API","version":"1.0.0","modules":{"database":"operational","graph_sdp":"operation
+[PASS] 资产列表 | 26ms | http://127.0.0.1:8000/api/assets | {"total":10,"items":[{"id":10,"asset_id":10,"name":"测试金融图谱_API","industry":"finance","description":"API测�
+[PASS] 合约列表 | 11ms | http://127.0.0.1:8000/api/contracts | {"total":9,"items":[{"id":9,"contract_id":9,"title":"API测试合约","provider_id":1,"consumer_id":4,"provider":"admin"
+[PASS] 审计日志 | 9ms | http://127.0.0.1:8000/api/audit/logs?limit=5 | {"total":34,"items":[{"id":34,"log_id":34,"timestamp":"2026-04-26T10:51:04.956984","user_id":null,"username":"system","r
+[PASS] 风险事件 | 9ms | http://127.0.0.1:8000/api/risks | {"total":5,"items":[{"id":5,"risk_id":5,"event_type":"data_quality","severity":"low","asset_id":null,"user_id":1,"descri
+[INFO] 检查完成: 通过 8 项, 失败 0 项
+[INFO] 网络诊断日志: /home/match/Digital-Security/logs/network-diagnosis.log

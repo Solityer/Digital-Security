@@ -111,7 +111,7 @@ async def run_graph_sdp_endpoint(
     algo_result = run_graph_sdp(
         graph_dict,
         epsilon=body.epsilon,
-        L=getattr(body, "L", 10),
+        L=body.L,
         seed=getattr(body, "seed", 42),
     )
 
@@ -119,7 +119,7 @@ async def run_graph_sdp_endpoint(
         "epsilon": body.epsilon,
         "delta": getattr(body, "delta", 1e-5),
         "noise_mechanism": getattr(body, "noise_mechanism", "laplace"),
-        "L": getattr(body, "L", 10),
+        "L": body.L,
     }
 
     task = await _save_privacy_task(db, body.asset_id, "graph_sdp", params, algo_result,

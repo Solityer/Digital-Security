@@ -53,7 +53,7 @@ async def _run_and_save(
     db: AsyncSession,
     body: ZKGCNRequest,
     tampered: bool = False,
-) -> ZKGCNProof:
+) -> dict:
     graph_dict = await _load_graph(db, body.asset_id)
 
     result = run_zkgcn_infer(
@@ -112,7 +112,34 @@ async def _run_and_save(
         user_id=body.created_by,
     )
 
-    return proof
+    class_distribution = result["inference_result"].get("class_distribution", {})
+    predicted_class = 0
+    if class_distribution:
+        predicted_class = int(max(class_distribution.items(), key=lambda item: item[1])[0])
+
+    return {
+        "id": proof.id,
+        "asset_id": proof.asset_id,
+        "model_type": proof.model_type,
+        "input_nodes": proof.input_nodes,
+        "adjacency_summary": proof.adjacency_summary,
+        "layer_summaries": proof.layer_summaries,
+        "inference_result": proof.inference_result,
+        "public_input_hash": proof.public_input_hash,
+        "witness_summary": proof.witness_summary,
+        "proof_hash": proof.proof_hash,
+        "vk_hash": proof.vk_hash,
+        "pk_hash": proof.pk_hash,
+        "verify_result": proof.verify_result,
+        "tampered": proof.tampered,
+        "elapsed_ms": proof.elapsed_ms,
+        "proof_size_kb": proof.proof_size_kb,
+        "created_by": proof.created_by,
+        "created_at": proof.created_at,
+        "explanation_steps": result["explanation_steps"],
+        "predicted_class": predicted_class,
+        "class_name": f"类别 {predicted_class}",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -124,7 +151,7 @@ async def _run_and_save(
 async def zkgcn_infer(
     body: ZKGCNRequest,
     db: AsyncSession = Depends(get_db),
-) -> ZKGCNProof:
+) -> dict:
     """
     Run ZK-GCN inference on a data asset's graph.
 
@@ -138,7 +165,7 @@ async def zkgcn_infer(
 async def zkgcn_tamper_demo(
     body: ZKGCNRequest,
     db: AsyncSession = Depends(get_db),
-) -> ZKGCNProof:
+) -> dict:
     """
     Demo endpoint: run ZK-GCN inference with a deliberately corrupted proof.
 
