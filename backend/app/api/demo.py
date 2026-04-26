@@ -45,66 +45,75 @@ router = APIRouter()
 _SCENARIOS: dict[str, dict] = {
     "finance": {
         "key": "finance",
-        "title": "金融数据安全共享",
+        "title": "金融联合风控",
         "description": (
-            "模拟金融机构之间的数据共享场景：在保护用户隐私的前提下，"
-            "通过 VPCS 安全查询资金流转路径，并使用 GS-LDP "
-            "对交易网络度分布进行本地差分隐私保护，最后进行风险评估。"
+            "围绕跨机构风控联防需求，平台在不暴露原始交易明细的前提下，"
+            "完成关系图谱登记、授权校验、隐私查询验证与风险评估闭环。"
         ),
+        "participants": ["商业银行", "消费金融机构", "监管专班", "平台运营方"],
+        "assets": ["金融交易关系图谱", "企业风控关联图谱"],
+        "capabilities": ["数据资产治理", "VPCS 可验证查询", "GS-LDP 隐私保护", "风险联动预警"],
         "steps": [
-            "注册金融图数据资产（50节点：用户/账户/商户）",
-            "执行 VPCS 约束最短路径查询（资金流转路径验证）",
-            "运行 GS-LDP 本地差分隐私保护（交易度分布脱敏）",
-            "风险评估（检测异常访问频率与预算超支）",
+            "核验金融关系图谱资产与授权边界",
+            "执行 VPCS 约束路径查询并校验证明",
+            "运行 GS-LDP 输出脱敏统计结果",
+            "联动风险引擎生成联合风控结论",
         ],
         "key_features": [
-            "零知识路径证明防止路由信息泄露",
-            "本地差分隐私保护单个用户的交易行为",
-            "全链路审计日志（哈希链式不可篡改）",
-            "实时风险感知与访问频率监控",
+            "多机构联合分析不出域",
+            "路径查询 proof hash 可验证",
+            "隐私预算可控且全程可审计",
+            "风险告警与治理建议同步输出",
         ],
+        "value": "适用于贷前反欺诈、关联交易识别与异常资金链排查。",
     },
     "medical": {
         "key": "medical",
-        "title": "医疗数据隐私发布",
+        "title": "医疗科研共享",
         "description": (
-            "模拟医疗机构的患者数据发布场景：使用 NDKD k-度匿名化保护"
-            "患者节点的度数信息，通过 GCC-SDP 差分隐私发布聚类系数统计，"
-            "并生成隐私保护分析报告。"
+            "面向多中心科研协同，平台对诊疗关联网络进行匿名化与差分隐私处理，"
+            "在确保合规前提下输出科研可用的统计与验证结果。"
         ),
+        "participants": ["三甲医院", "医学院研究中心", "卫健监管部门", "平台运营方"],
+        "assets": ["医疗协同诊疗网络"],
+        "capabilities": ["资产登记", "NDKD 匿名化", "GCC-SDP 统计发布", "审计追踪"],
         "steps": [
-            "注册医疗图数据资产（40节点：医院/患者/疾病/检测）",
-            "运行 NDKD k-度匿名化（保护患者就诊连接模式）",
-            "运行 GCC-SDP 聚类系数差分隐私发布",
-            "生成医疗数据隐私保护分析报告",
+            "装载医疗协同诊疗网络与使用协议",
+            "运行 NDKD 匿名化保护患者连接模式",
+            "发布 GCC-SDP 聚类系数脱敏统计",
+            "形成科研共享报告并沉淀审计记录",
         ],
         "key_features": [
-            "k-度匿名防止患者病情通过图结构推断",
-            "差分隐私聚类系数保护诊断关联关系",
-            "邻居子图扰动进一步混淆患者关系网络",
-            "合规性标签与授权范围管理",
+            "患者身份与诊疗关系双重保护",
+            "科研统计结果可复核可追溯",
+            "授权、算法与审计形成闭环",
+            "兼顾数据可用性与合规性",
         ],
+        "value": "适用于多中心科研、病例联邦分析与医疗数据开放审查。",
     },
     "government": {
         "key": "government",
-        "title": "政务数据确权流通",
+        "title": "政务数据开放",
         "description": (
-            "模拟政府数据开放场景：注册政务图资产并生成确权凭证，"
-            "创建数据共享合约并进行授权管理，运行 ZK-GCN 推理验证，"
-            "最后验证全链路审计日志的完整性。"
+            "围绕政务数据开放流通，平台完成确权登记、共享授权、"
+            "可验证推理与审计链校验，形成可答辩展示的完整流程。"
         ),
+        "participants": ["政务数据管理局", "公共服务企业", "审计专员", "平台运营方"],
+        "assets": ["政务开放数据关联图", "城市交通出行网络"],
+        "capabilities": ["确权存证", "共享授权", "zkGCN 可验证推理", "审计链校验"],
         "steps": [
-            "注册政务图数据资产（45节点：企业/许可证/区域/交通）",
-            "创建数据共享合约并激活",
-            "运行 ZK-GCN 零知识推理证明",
-            "验证全链路审计哈希链完整性",
+            "登记政务开放数据资产并生成凭证",
+            "创建共享授权协议并完成生效",
+            "运行 zkGCN 推理并输出 proof hash",
+            "校验审计链完整性与篡改检测能力",
         ],
         "key_features": [
-            "区块链式确权存证（asset_hash + ownership_credential）",
-            "合约全生命周期管理（草稿→待激活→激活→终止）",
-            "零知识 GCN 推理：证明模型正确执行而不泄露模型权重",
-            "哈希链式审计日志篡改检测演示",
+            "确权、授权、推理、审计全链条贯通",
+            "推理结论与证明结果可同步展示",
+            "政务开放数据使用边界清晰",
+            "异常篡改可被即时识别",
         ],
+        "value": "适用于政务目录开放、城市治理协同与公共服务智能分析。",
     },
 }
 
@@ -171,13 +180,38 @@ async def _ensure_demo_asset(
             name=name,
             industry=industry,
             description=_SCENARIOS[industry]["description"][:200],
+            data_source={
+                "finance": "金融交易监测专线脱敏库",
+                "medical": "区域协同诊疗平台脱敏数据仓",
+                "government": "政务开放数据目录平台",
+            }[industry],
+            subject_type={
+                "finance": "机构与账户主体",
+                "medical": "医疗机构与患者主体",
+                "government": "政务实体与公共服务对象",
+            }[industry],
+            node_meaning={
+                "finance": "客户、账户、商户、设备",
+                "medical": "医院、科室、病例、检查项目",
+                "government": "企业、许可证、区域、交通设施",
+            }[industry],
+            edge_meaning={
+                "finance": "交易、持有、关联、担保",
+                "medical": "就诊、转诊、检查、诊断关联",
+                "government": "审批、归属、服务、治理关联",
+            }[industry],
+            authorization_scope="经合约审批后可用于统计分析与可验证计算",
             asset_hash=asset_hash,
             ownership_credential=credential,
             chain_record=chain_record,
             graph_snapshot_id=snap.id,
             status="active",
-            sensitivity_level=2,
-            compliance_tags=["demo", industry],
+            sensitivity_level=4 if industry in {"finance", "medical"} else 3,
+            compliance_tags={
+                "finance": ["金融数据安全", "反洗钱", "个人信息保护法"],
+                "medical": ["HIPAA", "医疗数据保护", "科研脱敏"],
+                "government": ["数据安全法", "政务数据开放", "确权存证"],
+            }[industry],
         )
         db.add(asset)
         await db.flush()
@@ -206,13 +240,12 @@ async def list_scenarios() -> dict:
             "title": value["title"],
             "description": value["description"],
             "industry": "金融" if key == "finance" else "医疗" if key == "medical" else "政务",
-            "actors": {
-                "finance": ["银行A", "银行B", "监管机构", "平台"],
-                "medical": ["三甲医院", "研究机构", "卫健委", "平台"],
-                "government": ["政务中心", "企业", "审计方", "平台"],
-            }[key],
+            "actors": value["participants"],
+            "assets": value["assets"],
+            "capabilities": value["capabilities"],
             "technologies": value["key_features"],
             "steps": value["steps"],
+            "value": value["value"],
         }
         for key, value in _SCENARIOS.items()
     ]
@@ -259,7 +292,7 @@ async def run_scenario(
     # FINANCE scenario
     # ----------------------------------------------------------------
     if scenario == "finance":
-        asset, graph_dict = await _ensure_demo_asset(db, "finance", "金融交易网络-演示")
+        asset, graph_dict = await _ensure_demo_asset(db, "finance", "金融交易关系图谱")
 
         # Step 1 – VPCS query
         nodes = graph_dict["nodes"]
@@ -326,10 +359,10 @@ async def run_scenario(
 
         await create_audit_log(
             db,
-            username="demo",
-            role="demo",
+            username="system",
+            role="analyst",
             action="run_demo_scenario_finance",
-            target_type="demo",
+            target_type="scenario",
             target_id=str(asset.id),
             result="success",
             detail={"steps_completed": steps_completed},
@@ -348,7 +381,7 @@ async def run_scenario(
     # MEDICAL scenario
     # ----------------------------------------------------------------
     elif scenario == "medical":
-        asset, graph_dict = await _ensure_demo_asset(db, "medical", "医疗患者网络-演示")
+        asset, graph_dict = await _ensure_demo_asset(db, "medical", "医疗协同诊疗网络")
 
         # Step 1 – NDKD
         ndkd_result = run_ndkd(
@@ -407,10 +440,10 @@ async def run_scenario(
 
         await create_audit_log(
             db,
-            username="demo",
-            role="demo",
+            username="system",
+            role="analyst",
             action="run_demo_scenario_medical",
-            target_type="demo",
+            target_type="scenario",
             target_id=str(asset.id),
             result="success",
             detail={"steps_completed": steps_completed},
@@ -431,7 +464,7 @@ async def run_scenario(
     # GOVERNMENT scenario
     # ----------------------------------------------------------------
     else:  # government
-        asset, graph_dict = await _ensure_demo_asset(db, "government", "政务数据网络-演示")
+        asset, graph_dict = await _ensure_demo_asset(db, "government", "政务开放数据关联图")
 
         # Step 1 – Asset registration result (already done in _ensure_demo_asset)
         results["asset_registration"] = {
@@ -447,13 +480,13 @@ async def run_scenario(
         import hashlib, json as _json
         from app.models import Contract, AuthorizationPolicy
         ts = datetime.utcnow().isoformat()
-        chash = hashlib.sha256(f"demo-gov-contract|{ts}".encode()).hexdigest()
+        chash = hashlib.sha256(f"gov-open-contract|{ts}".encode()).hexdigest()
 
         contract = Contract(
-            title="政务数据开放合约-演示",
+            title="政务开放数据共享授权协议",
             provider_id=None,
             consumer_id=None,
-            purpose="演示政务数据安全流通能力",
+            purpose="支持公共服务分析与目录开放核验，不得用于识别单一主体。",
             valid_from=datetime.utcnow(),
             accessible_fields=["company_name", "license_type", "region"],
             allowed_algorithms=["graph_sdp", "ndkd", "zkgcn"],
@@ -515,10 +548,10 @@ async def run_scenario(
 
         await create_audit_log(
             db,
-            username="demo",
-            role="demo",
+            username="system",
+            role="auditor",
             action="run_demo_scenario_government",
-            target_type="demo",
+            target_type="scenario",
             target_id=str(asset.id),
             result="success",
             detail={"steps_completed": steps_completed},
@@ -543,9 +576,12 @@ async def run_scenario(
         "steps_completed": steps_completed,
         "results": results,
         "metrics": metrics,
+        "modules_used": _SCENARIOS[scenario]["capabilities"],
+        "assets": _SCENARIOS[scenario]["assets"],
+        "value_summary": _SCENARIOS[scenario]["value"],
         "elapsed_ms": elapsed_ms,
         "duration_ms": elapsed_ms,
-        "message": f"{_SCENARIOS[scenario]['title']} 演示执行完成。",
+        "message": f"{_SCENARIOS[scenario]['title']} 流程已执行完成，可用于现场讲解。",
         "steps": [
             {
                 "id": f"{scenario}-{index + 1}",

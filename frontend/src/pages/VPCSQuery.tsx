@@ -6,8 +6,8 @@ import {
 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StepTimeline, { type Step } from '../components/StepTimeline'
-import { getAssets, runVPCSQuery, runVPCSTamper } from '../api/endpoints'
-import { getId, safeNumber, safeString, toArray, toObject } from '../api/normalizers'
+import { getAssets, getAsset, runVPCSQuery, runVPCSTamper } from '../api/endpoints'
+import { getGraphData, getId, safeNumber, safeString, toArray, toObject } from '../api/normalizers'
 
 interface Asset {
   id?: string
@@ -96,6 +96,7 @@ export default function VPCSQuery() {
   const [timeThreshold, setTimeThreshold] = useState(50)
   const [distanceConstraint, setDistanceConstraint] = useState(5)
   const [budget, setBudget] = useState(1000)
+  const [nodeOptions, setNodeOptions] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [tamperLoading, setTamperLoading] = useState(false)
   const [error, setError] = useState('')
@@ -117,6 +118,32 @@ export default function VPCSQuery() {
   }, [])
 
   useEffect(() => { loadAssets() }, [loadAssets])
+
+  useEffect(() => {
+    let active = true
+    if (!assetId) {
+      setNodeOptions([])
+      return () => { active = false }
+    }
+
+    ;(async () => {
+      try {
+        const detail = await getAsset(assetId)
+        const graph = getGraphData(detail?.graph_snapshot ?? detail)
+        const options = toArray(graph.nodes).map((node) => safeString(node?.id)).filter(Boolean).slice(0, 32)
+        if (!active) return
+        setNodeOptions(options)
+        if (options.length > 0) {
+          setSourceNode((current) => options.includes(current) ? current : options[0])
+          setTargetNode((current) => options.includes(current) ? current : (options[1] ?? options[0]))
+        }
+      } catch {
+        if (active) setNodeOptions([])
+      }
+    })()
+
+    return () => { active = false }
+  }, [assetId])
 
   const execute = async (mode: 'query' | 'tamper') => {
     if (!assetId) {
@@ -206,11 +233,23 @@ export default function VPCSQuery() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="form-label">起点节点</label>
-              <input className="form-input" value={sourceNode} onChange={(event) => setSourceNode(event.target.value)} />
+              {nodeOptions.length > 0 ? (
+                <select className="form-input" value={sourceNode} onChange={(event) => setSourceNode(event.target.value)}>
+                  {nodeOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              ) : (
+                <input className="form-input" value={sourceNode} onChange={(event) => setSourceNode(event.target.value)} />
+              )}
             </div>
             <div>
               <label className="form-label">终点节点</label>
-              <input className="form-input" value={targetNode} onChange={(event) => setTargetNode(event.target.value)} />
+              {nodeOptions.length > 0 ? (
+                <select className="form-input" value={targetNode} onChange={(event) => setTargetNode(event.target.value)}>
+                  {nodeOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              ) : (
+                <input className="form-input" value={targetNode} onChange={(event) => setTargetNode(event.target.value)} />
+              )}
             </div>
           </div>
 

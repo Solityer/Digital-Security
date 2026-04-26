@@ -130,8 +130,8 @@ async def tamper_demo(
     # Log the tampering action itself
     await create_audit_log(
         db,
-        username="demo",
-        role="demo",
+        username="system",
+        role="auditor",
         action="tamper_demo",
         target_type="audit_log",
         target_id=str(result["tampered_log_id"]),

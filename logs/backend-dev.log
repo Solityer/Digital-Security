@@ -2,8 +2,63 @@
 
 You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
   warnings.warn(
-INFO:     Started server process [203327]
+INFO:     Started server process [222116]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:52440 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38350 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38352 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38384 - "GET /api/demo/scenarios HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38370 - "GET /api/audit/logs?limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38360 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38356 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38372 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38390 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38394 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38408 - "GET /api/demo/scenarios HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38412 - "GET /api/audit/logs?limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38426 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38440 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51098 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51104 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54866 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54868 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54878 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54882 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54888 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54904 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54906 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54918 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54934 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54942 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37700 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37704 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37716 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37718 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37728 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37744 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35246 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35254 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52344 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52350 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52352 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52362 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42184 - "POST /api/risks/evaluate HTTP/1.1" 201 Created
+INFO:     127.0.0.1:42188 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42198 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42210 - "GET /api/audit/logs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42224 - "GET /api/audit/logs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45724 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45750 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45772 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45736 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45760 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45782 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45788 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45800 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45816 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45830 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [222116]

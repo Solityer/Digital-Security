@@ -20,21 +20,44 @@ from app.services.audit_service import create_audit_log
 
 router = APIRouter()
 
+ROLE_LABELS = {
+    "admin": "平台管理员",
+    "analyst": "数据分析师",
+    "auditor": "审计专员",
+    "demo": "演示账号",
+}
+
 
 async def _get_default_user_ids(db: AsyncSession) -> tuple[int | None, int | None]:
     provider_row = await db.execute(select(User).where(User.username == "admin").limit(1))
-    consumer_row = await db.execute(select(User).where(User.username == "demo").limit(1))
+    consumer_row = await db.execute(select(User).where(User.username == "analyst").limit(1))
     provider = provider_row.scalar_one_or_none()
     consumer = consumer_row.scalar_one_or_none()
     return provider.id if provider else None, consumer.id if consumer else None
 
 
-async def _get_usernames(db: AsyncSession, ids: list[int | None]) -> dict[int, str]:
+async def _get_usernames(db: AsyncSession, ids: list[int | None]) -> dict[int, dict[str, str]]:
     wanted_ids = [user_id for user_id in ids if user_id is not None]
     if not wanted_ids:
         return {}
     rows = await db.execute(select(User).where(User.id.in_(wanted_ids)))
-    return {user.id: user.username for user in rows.scalars().all()}
+    return {
+        user.id: {
+            "username": user.username,
+            "role": user.role if isinstance(user.role, str) else user.role.value,
+        }
+        for user in rows.scalars().all()
+    }
+
+
+def _format_party(user_names: dict[int, dict[str, str]], user_id: int | None) -> str:
+    if user_id is None:
+        return "平台待配置"
+    info = user_names.get(user_id)
+    if not info:
+        return f"机构#{user_id}"
+    role = ROLE_LABELS.get(info.get("role", ""), info.get("role", ""))
+    return f"{info['username']}（{role}）"
 
 
 # ---------------------------------------------------------------------------
@@ -88,9 +111,9 @@ async def create_contract(
         contract_id=contract.id,
         user_id=consumer_id,
         asset_id=None,
-        rbac_roles=["analyst"],
+        rbac_roles=["admin", "analyst", "auditor"],
         abac_attrs={},
-        allowed_operations=body.allowed_algorithms or ["read"],
+        allowed_operations=["read", "analyze", "export", "run_algorithm", "query"],
     )
     db.add(policy)
     await db.flush()
@@ -120,8 +143,8 @@ async def create_contract(
         "title": contract.title,
         "provider_id": contract.provider_id,
         "consumer_id": contract.consumer_id,
-        "provider": user_names.get(contract.provider_id or -1, f"机构#{contract.provider_id}" if contract.provider_id else "未指定"),
-        "consumer": user_names.get(contract.consumer_id or -1, f"机构#{contract.consumer_id}" if contract.consumer_id else "未指定"),
+        "provider": _format_party(user_names, contract.provider_id),
+        "consumer": _format_party(user_names, contract.consumer_id),
         "purpose": contract.purpose,
         "valid_from": contract.valid_from,
         "valid_until": contract.valid_until,
@@ -175,8 +198,8 @@ async def list_contracts(
             "title": c.title,
             "provider_id": c.provider_id,
             "consumer_id": c.consumer_id,
-            "provider": user_names.get(c.provider_id or -1, f"机构#{c.provider_id}" if c.provider_id else "未指定"),
-            "consumer": user_names.get(c.consumer_id or -1, f"机构#{c.consumer_id}" if c.consumer_id else "未指定"),
+            "provider": _format_party(user_names, c.provider_id),
+            "consumer": _format_party(user_names, c.consumer_id),
             "purpose": c.purpose,
             "valid_from": c.valid_from,
             "valid_until": c.valid_until,
@@ -229,8 +252,8 @@ async def get_contract(
         "title": contract.title,
         "provider_id": contract.provider_id,
         "consumer_id": contract.consumer_id,
-        "provider": user_names.get(contract.provider_id or -1, f"机构#{contract.provider_id}" if contract.provider_id else "未指定"),
-        "consumer": user_names.get(contract.consumer_id or -1, f"机构#{contract.consumer_id}" if contract.consumer_id else "未指定"),
+        "provider": _format_party(user_names, contract.provider_id),
+        "consumer": _format_party(user_names, contract.consumer_id),
         "purpose": contract.purpose,
         "valid_from": contract.valid_from,
         "valid_until": contract.valid_until,
@@ -287,8 +310,40 @@ async def activate_contract(
     contract_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Transition contract from pending → active."""
-    return await _transition_contract(db, contract_id, "pending", "active", "activate_contract")
+    """Activate a contract from draft or pending state."""
+    row = await db.execute(select(Contract).where(Contract.id == contract_id))
+    contract: Contract | None = row.scalar_one_or_none()
+    if contract is None:
+        raise HTTPException(status_code=404, detail=f"Contract {contract_id} not found.")
+
+    current = contract.status if isinstance(contract.status, str) else contract.status.value
+    if current not in {"draft", "pending"}:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Contract must be in 'draft' or 'pending' state to activate. Current: {current}",
+        )
+
+    contract.status = "active"
+    await db.flush()
+
+    await create_audit_log(
+        db,
+        username="system",
+        role="admin",
+        action="activate_contract",
+        target_type="contract",
+        target_id=str(contract_id),
+        result="success",
+        detail={"old_status": current, "new_status": "active"},
+    )
+
+    return {
+        "id": contract.id,
+        "contract_id": contract.id,
+        "title": contract.title,
+        "status": "active",
+        "updated_at": contract.updated_at,
+    }
 
 
 @router.post("/{contract_id}/to-pending")

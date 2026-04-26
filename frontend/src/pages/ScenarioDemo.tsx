@@ -29,6 +29,10 @@ interface ScenarioResult {
   status?: string
   steps?: ScenarioStep[]
   metrics?: ScenarioMetric[] | Record<string, number | string>
+  modules_used?: string[]
+  assets?: string[]
+  value_summary?: string
+  results?: Record<string, unknown>
   duration_ms?: number
   message?: string
 }
@@ -41,8 +45,11 @@ interface ScenarioInfo {
   description: string
   industry: string
   actors?: string[]
+  assets?: string[]
+  capabilities?: string[]
   technologies?: string[]
   steps?: string[]
+  value?: string
 }
 
 const FALLBACK_SCENARIOS: ScenarioInfo[] = [
@@ -52,8 +59,11 @@ const FALLBACK_SCENARIOS: ScenarioInfo[] = [
     description: '多家金融机构在数据不出域的前提下，联合完成风控分析、路径验证和风险评估。',
     industry: '金融',
     actors: ['银行A', '银行B', '监管机构', '平台'],
+    assets: ['金融交易关系图谱', '企业风控关联图谱'],
+    capabilities: ['数据资产治理', 'VPCS 可验证查询', 'GS-LDP 隐私保护', '风险联动预警'],
     technologies: ['Graph-SDP', 'VPCS', 'RBAC/ABAC', '审计追踪'],
     steps: ['准备金融资产', '执行 VPCS 路径验证', '运行 GS-LDP', '输出风险评估'],
+    value: '适用于贷前反欺诈、异常资金链排查和联合风控答辩展示。',
   },
   {
     id: 'medical',
@@ -61,8 +71,11 @@ const FALLBACK_SCENARIOS: ScenarioInfo[] = [
     description: '医院与研究机构在隐私保护前提下完成图匿名化、统计发布与科研分析。',
     industry: '医疗',
     actors: ['三甲医院', '研究机构', '卫健委', '平台'],
+    assets: ['医疗协同诊疗网络'],
+    capabilities: ['合约授权', 'NDKD 匿名化', 'GCC-SDP 统计发布', '审计追踪'],
     technologies: ['NDKD', 'GCC-SDP', '合约授权', '审计追踪'],
     steps: ['准备医疗资产', '执行 NDKD', '运行 GCC-SDP', '输出隐私报告'],
+    value: '适用于科研共享、病例联动分析和医疗数据合规开放说明。',
   },
   {
     id: 'government',
@@ -70,8 +83,11 @@ const FALLBACK_SCENARIOS: ScenarioInfo[] = [
     description: '政务数据在确权、合约和可验证推理的保障下完成开放流通与审计。',
     industry: '政务',
     actors: ['政务中心', '企业', '审计方', '平台'],
+    assets: ['政务开放数据关联图', '城市交通出行网络'],
+    capabilities: ['确权存证', '共享授权', 'zkGCN 可验证推理', '审计链校验'],
     technologies: ['zkGCN', 'VPCS', '合约管理', '哈希链审计'],
     steps: ['准备政务资产', '创建共享合约', '运行 zkGCN', '验证审计链'],
+    value: '适用于政务目录开放、公共服务协同和可验证智能分析展示。',
   },
 ]
 
@@ -200,6 +216,21 @@ function ScenarioCard({ scenario, color }: { scenario: ScenarioInfo; color: stri
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">使用资产</p>
+          <div className="flex flex-wrap gap-1.5">
+            {toArray(scenario.assets).map((asset) => <span key={asset} className="badge badge-blue text-xs">{asset}</span>)}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">关键能力</p>
+          <div className="flex flex-wrap gap-1.5">
+            {toArray(scenario.capabilities).map((capability) => <span key={capability} className="badge badge-cyan text-xs">{capability}</span>)}
+          </div>
+        </div>
+      </div>
+
       {toArray(scenario.actors).length >= 2 ? (
         <div>
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">数据流向</p>
@@ -214,7 +245,7 @@ function ScenarioCard({ scenario, color }: { scenario: ScenarioInfo; color: stri
         style={{ background: `linear-gradient(135deg, ${color}20, ${color}30)`, border: `1px solid ${color}50`, color }}
       >
         {running ? <LoadingSpinner size="sm" /> : <Play className="w-5 h-5" />}
-        {running ? '演示运行中...' : '开始演示'}
+        {running ? '场景运行中...' : '一键运行'}
       </button>
 
       {error ? <p className="alert-error">{error}</p> : null}
@@ -225,9 +256,18 @@ function ScenarioCard({ scenario, color }: { scenario: ScenarioInfo; color: stri
             <div className={`rounded-lg p-3 flex items-center gap-3 ${result.status === 'completed' || result.status === 'success' ? 'alert-success' : 'alert-info'}`}>
               {result.status === 'completed' || result.status === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" /> : <Clock className="w-5 h-5 flex-shrink-0" />}
               <div>
-                <p className="font-semibold">{result.status === 'completed' || result.status === 'success' ? '演示完成' : '演示进行中'}</p>
+                <p className="font-semibold">{result.status === 'completed' || result.status === 'success' ? '场景执行完成' : '场景执行中'}</p>
                 {result.duration_ms != null ? <p className="text-xs opacity-80">总耗时 {safeNumber(result.duration_ms).toFixed(1)} ms</p> : null}
                 <p className="text-xs opacity-80">已完成 {completedSteps}/{steps.length} 步骤</p>
+              </div>
+            </div>
+          ) : null}
+
+          {toArray(result?.modules_used).length > 0 ? (
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">本次调用模块</p>
+              <div className="flex flex-wrap gap-1.5">
+                {toArray(result?.modules_used).map((item) => <span key={item} className="badge badge-purple text-xs">{item}</span>)}
               </div>
             </div>
           ) : null}
@@ -257,9 +297,12 @@ function ScenarioCard({ scenario, color }: { scenario: ScenarioInfo; color: stri
             </div>
           ) : null}
 
+          {result?.value_summary ? <div className="alert-info"><p className="text-sm">价值说明：{result.value_summary}</p></div> : null}
           {result?.message ? <div className="alert-info"><p className="text-sm">{result.message}</p></div> : null}
         </div>
       ) : null}
+
+      {scenario.value ? <div className="alert-info"><p className="text-sm">场景价值：{scenario.value}</p></div> : null}
     </div>
   )
 }

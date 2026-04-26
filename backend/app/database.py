@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
@@ -17,7 +18,7 @@ from sqlalchemy.orm import DeclarativeBase
 # Engine & session factory
 # ---------------------------------------------------------------------------
 
-DATABASE_URL = "sqlite+aiosqlite:///./digital_security.db"
+DATABASE_URL = os.getenv("DIGITAL_SECURITY_DB_URL", "sqlite+aiosqlite:///./digital_security.db")
 
 engine = create_async_engine(
     DATABASE_URL,

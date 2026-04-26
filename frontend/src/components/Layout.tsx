@@ -59,7 +59,7 @@ export default function Layout({ children }: LayoutProps) {
               className="text-xl font-black tracking-wider text-tech"
               style={{ letterSpacing: '0.15em' }}
             >
-              数智安行
+              数图信枢
             </span>
             <span className="text-slate-400 text-sm ml-3 hidden sm:inline">
               图数据可信治理与智能流通平台
@@ -72,7 +72,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="hidden md:flex items-center gap-4 text-xs text-slate-400">
             <span>v1.0.0</span>
             <span className="text-slate-600">|</span>
-            <span>赛题竞赛演示版</span>
+            <span>可信治理运行版</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="relative flex h-2.5 w-2.5">

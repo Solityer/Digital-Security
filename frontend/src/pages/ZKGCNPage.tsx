@@ -31,6 +31,8 @@ interface ZKGCNResponse {
   }
   layer_summaries?: Array<Record<string, unknown>>
   explanation_steps?: Array<Record<string, unknown>>
+  witness_summary?: Record<string, unknown>
+  adjacency_summary?: Record<string, unknown>
   pk_hash?: string
   vk_hash?: string
   public_input_hash?: string
@@ -79,6 +81,7 @@ export default function ZKGCNPage() {
   const [assetId, setAssetId] = useState('')
   const [layers, setLayers] = useState(2)
   const [hiddenDim, setHiddenDim] = useState(64)
+  const [modelType, setModelType] = useState('gcn')
   const [loading, setLoading] = useState(false)
   const [tamperLoading, setTamperLoading] = useState(false)
   const [error, setError] = useState('')
@@ -114,7 +117,7 @@ export default function ZKGCNPage() {
       asset_id: Number(assetId),
       layers,
       hidden_dim: hiddenDim,
-      model_type: 'gcn',
+      model_type: modelType,
     }
 
     try {
@@ -143,6 +146,8 @@ export default function ZKGCNPage() {
   const classDistribution = toObject<Record<string, number>>(inference.class_distribution, {})
   const layerSummaries = toArray<Record<string, unknown>>(result?.layer_summaries)
   const steps = stepsFromExplanation(toArray(result?.explanation_steps), tampered)
+  const witnessSummary = toObject<Record<string, unknown>>(result?.witness_summary, {})
+  const adjacencySummary = toObject<Record<string, unknown>>(result?.adjacency_summary, {})
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -183,6 +188,14 @@ export default function ZKGCNPage() {
             <div>
               <label className="form-label">隐藏维度: {hiddenDim}</label>
               <input type="range" min="16" max="128" step="16" value={hiddenDim} onChange={(event) => setHiddenDim(Number(event.target.value))} className="w-full accent-cyan-500 mt-2" />
+            </div>
+            <div>
+              <label className="form-label">模型类型</label>
+              <select className="form-input" value={modelType} onChange={(event) => setModelType(event.target.value)}>
+                <option value="gcn">GCN</option>
+                <option value="gin">GIN</option>
+                <option value="graphsage">GraphSAGE</option>
+              </select>
             </div>
             {error ? <p className="alert-error text-xs">{error}</p> : null}
             <button onClick={() => execute('infer')} disabled={loading || !assetId} className="btn btn-primary w-full gap-2 justify-center">
@@ -295,6 +308,33 @@ export default function ZKGCNPage() {
                     </div>
                   ) : null)}
                 </div>
+
+                {(Object.keys(witnessSummary).length > 0 || Object.keys(adjacencySummary).length > 0) ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div className="rounded-lg p-3" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
+                      <p className="text-xs text-slate-500 mb-2">Witness 摘要</p>
+                      <div className="space-y-1 text-xs text-slate-300">
+                        {Object.entries(witnessSummary).map(([key, value]) => (
+                          <div key={key} className="flex justify-between gap-3">
+                            <span className="text-slate-500">{key}</span>
+                            <span className="font-mono">{safeString(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-lg p-3" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
+                      <p className="text-xs text-slate-500 mb-2">Public Input 摘要</p>
+                      <div className="space-y-1 text-xs text-slate-300">
+                        {Object.entries(adjacencySummary).map(([key, value]) => (
+                          <div key={key} className="flex justify-between gap-3">
+                            <span className="text-slate-500">{key}</span>
+                            <span className="font-mono">{safeString(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="flex items-center gap-4 mt-4">
                   <span className="text-sm text-slate-400">证明验证：</span>

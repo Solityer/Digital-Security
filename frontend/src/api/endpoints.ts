@@ -68,8 +68,8 @@ export const runZKGCNTamper = (data: Record<string, unknown>) =>
   client.post('/api/zkgcn/tamper-demo', data).then((r) => r.data)
 
 // ─── Risk ─────────────────────────────────────────────────────────────────────
-export const getRisks = () =>
-  client.get('/api/risks').then((r) => r.data)
+export const getRisks = (params?: Record<string, unknown>) =>
+  client.get('/api/risks', { params }).then((r) => r.data)
 
 export const evaluateRisk = (data: Record<string, unknown>) =>
   client.post('/api/risks/evaluate', data).then((r) => r.data)

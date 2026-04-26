@@ -77,10 +77,10 @@ def _contract_hash(title: str, provider_id: int, consumer_id: int) -> str:
 async def _seed_users(session) -> dict[str, User]:
     """Create 4 default users; skip any that already exist."""
     user_defs = [
-        ("admin",   "admin@demo.com",   UserRole.admin,    "admin123"),
-        ("analyst", "analyst@demo.com", UserRole.analyst,  "analyst123"),
-        ("auditor", "auditor@demo.com", UserRole.auditor,  "auditor123"),
-        ("demo",    "demo@demo.com",    UserRole.demo,     "demo123"),
+        ("admin",   "admin@trust-hub.local",   UserRole.admin,    "admin123"),
+        ("analyst", "analyst@trust-hub.local", UserRole.analyst,  "analyst123"),
+        ("auditor", "auditor@trust-hub.local", UserRole.auditor,  "auditor123"),
+        ("demo",    "demo@trust-hub.local",    UserRole.demo,     "demo123"),
     ]
 
     users: dict[str, User] = {}
@@ -111,82 +111,118 @@ async def _seed_users(session) -> dict[str, User]:
 
 
 async def _seed_assets(session, users: dict[str, User]) -> dict[str, Asset]:
-    """Create 4 sample data assets with graph snapshots."""
+    """Create curated demo assets with graph snapshots."""
     admin = users["admin"]
     analyst = users["analyst"]
 
     asset_defs = [
         {
-            "name": "金融交易图谱",
+            "name": "金融交易关系图谱",
             "industry": IndustryType.finance,
             "description": (
-                "模拟金融机构间资金流转网络，包含用户、账户、商户三类节点，"
-                "共50个节点，覆盖转账、持有、交易等边关系。"
-                "用于金融风控与反洗钱场景的隐私保护分析。"
+                "汇集商业银行、支付机构、商户与终端设备的脱敏关系数据，"
+                "支撑联合风控、异常资金链排查与反洗钱路径核验。"
             ),
-            "node_meaning": "用户 / 账户 / 商户",
-            "edge_meaning": "资金转账 / 账户持有 / 交易关系",
-            "subject_type": "金融实体",
-            "data_source": "模拟金融交易系统",
-            "sensitivity_level": 4,
-            "compliance_tags": ["GDPR", "金融数据安全", "反洗钱"],
-            "authorization_scope": "仅限金融监管机构和授权分析师",
+            "node_meaning": "客户 / 账户 / 商户 / 设备",
+            "edge_meaning": "交易往来 / 持有关系 / 终端关联 / 担保关系",
+            "subject_type": "金融主体",
+            "data_source": "金融交易监测专线脱敏库",
+            "sensitivity_level": 5,
+            "compliance_tags": ["金融数据安全", "反洗钱", "个人信息保护法"],
+            "authorization_scope": "经合约审批后可用于读取、分析与隐私计算",
             "owner_id": admin.id,
             "graph_gen": generate_financial_graph,
+            "seed": 42,
         },
         {
-            "name": "医疗协作网络",
+            "name": "企业风控关联图谱",
+            "industry": IndustryType.finance,
+            "description": (
+                "覆盖企业、股东、供应商、案件与担保关系的关联网络，"
+                "用于企业画像、授信尽调和联合建模前的数据治理。"
+            ),
+            "node_meaning": "企业 / 股东 / 供应商 / 案件",
+            "edge_meaning": "控股关系 / 供应链关联 / 担保关系 / 司法关联",
+            "subject_type": "企业主体",
+            "data_source": "企业合规与供应链风控中心",
+            "sensitivity_level": 4,
+            "compliance_tags": ["企业合规", "数据安全法", "联合建模"],
+            "authorization_scope": "仅限风控团队与审计专员使用",
+            "owner_id": analyst.id,
+            "graph_gen": generate_financial_graph,
+            "seed": 84,
+        },
+        {
+            "name": "医疗协同诊疗网络",
             "industry": IndustryType.medical,
             "description": (
-                "模拟医院、患者、疾病、检查项目之间的关联网络，"
-                "共40个节点，用于医疗数据隐私发布与患者隐私保护研究。"
-                "支持 k-度匿名化和差分隐私聚类系数发布。"
+                "围绕跨院区协同诊疗构建的脱敏诊疗关联网络，"
+                "支撑病例科研、隐私发布与合规统计分析。"
             ),
-            "node_meaning": "医院 / 患者 / 疾病 / 检查",
-            "edge_meaning": "就诊关系 / 确诊疾病 / 接受检查",
+            "node_meaning": "医院 / 科室 / 患者 / 检查项目",
+            "edge_meaning": "就诊关系 / 转诊关系 / 检查关联 / 诊断关联",
             "subject_type": "医疗实体",
-            "data_source": "模拟医院信息系统",
+            "data_source": "区域协同诊疗平台脱敏数据仓",
             "sensitivity_level": 5,
-            "compliance_tags": ["HIPAA", "医疗数据保护", "患者隐私"],
-            "authorization_scope": "仅限医疗机构和卫生管理部门",
+            "compliance_tags": ["HIPAA", "医疗数据保护", "科研脱敏"],
+            "authorization_scope": "仅限科研项目与卫生监管场景调用",
             "owner_id": analyst.id,
             "graph_gen": generate_medical_graph,
+            "seed": 42,
         },
         {
-            "name": "政务开放数据图",
+            "name": "政务开放数据关联图",
             "industry": IndustryType.government,
             "description": (
-                "模拟企业、许可证、行政区域、交通方式之间的关联图谱，"
-                "共45个节点，用于政务数据确权流通与 ZK-GCN 推理验证场景。"
-                "支持区块链存证与合约管理。"
+                "整合企业登记、许可审批、区域治理与公共服务目录信息，"
+                "用于政务数据确权流通与可验证推理展示。"
             ),
-            "node_meaning": "企业 / 许可证 / 区域 / 交通",
-            "edge_meaning": "持有许可证 / 所在区域 / 使用交通方式",
+            "node_meaning": "企业 / 许可证 / 区域 / 公共服务事项",
+            "edge_meaning": "审批关系 / 归属关系 / 服务调用 / 区域关联",
             "subject_type": "政务实体",
-            "data_source": "模拟政府开放数据平台",
+            "data_source": "政务开放数据目录平台",
             "sensitivity_level": 3,
-            "compliance_tags": ["数据安全法", "政务数据开放", "区块链存证"],
-            "authorization_scope": "政府机构及授权企业",
+            "compliance_tags": ["数据安全法", "政务数据开放", "确权存证"],
+            "authorization_scope": "政府部门及授权服务机构可调用",
             "owner_id": admin.id,
             "graph_gen": generate_government_graph,
+            "seed": 42,
         },
         {
-            "name": "通用社交网络",
+            "name": "城市交通出行网络",
+            "industry": IndustryType.government,
+            "description": (
+                "围绕公交站点、道路节点、换乘枢纽与重点区域形成的出行网络，"
+                "用于城市治理协同、路径验证与公共服务分析。"
+            ),
+            "node_meaning": "站点 / 路口 / 区域 / 线路",
+            "edge_meaning": "连通关系 / 换乘关系 / 区域到达关系",
+            "subject_type": "交通实体",
+            "data_source": "城市综合交通治理平台",
+            "sensitivity_level": 3,
+            "compliance_tags": ["城市治理", "公共数据开放", "交通协同"],
+            "authorization_scope": "限公共服务分析、仿真评估与可验证查询",
+            "owner_id": admin.id,
+            "graph_gen": generate_government_graph,
+            "seed": 17,
+        },
+        {
+            "name": "通用社交关系网络",
             "industry": IndustryType.social,
             "description": (
-                "基于 Barabasi-Albert 模型生成的无标度社交网络，"
-                "共60个节点，节点代表用户，边代表社交关系。"
-                "用于社交网络隐私保护算法基准测试。"
+                "基于公开关系样本抽象出的社交互动网络，"
+                "可用于匿名化、差分隐私与图推理算法的稳定性验证。"
             ),
-            "node_meaning": "社交用户",
-            "edge_meaning": "好友 / 关注 / 同事 / 家庭关系",
+            "node_meaning": "个人用户 / 群组 / 内容节点",
+            "edge_meaning": "关注关系 / 互动关系 / 同群关系 / 协同关系",
             "subject_type": "社交用户",
-            "data_source": "模拟社交平台数据",
+            "data_source": "社交平台公开关系样本库",
             "sensitivity_level": 2,
-            "compliance_tags": ["个人信息保护法", "社交隐私"],
-            "authorization_scope": "平台内部研究团队",
+            "compliance_tags": ["个人信息保护法", "社交隐私", "匿名化研究"],
+            "authorization_scope": "限平台内部研究与算法验证使用",
             "owner_id": analyst.id,
             "graph_gen": generate_social_graph,
+            "seed": 42,
         },
     ]
 
@@ -207,7 +243,7 @@ async def _seed_assets(session, users: dict[str, User]) -> dict[str, Asset]:
             continue
 
         # Generate graph
-        G = adef["graph_gen"](seed=42)
+        G = adef["graph_gen"](seed=adef.get("seed", 42))
         graph_dict = graph_to_dict(G)
         stats = get_graph_stats(G)
 
@@ -263,7 +299,7 @@ async def _seed_assets(session, users: dict[str, User]) -> dict[str, Asset]:
 async def _seed_contracts(
     session, users: dict[str, User], assets: dict[str, Asset]
 ) -> list[Contract]:
-    """Create 3 sample data-sharing contracts."""
+    """Create curated data-sharing contracts."""
     admin   = users["admin"]
     analyst = users["analyst"]
     auditor = users["auditor"]
@@ -272,49 +308,94 @@ async def _seed_contracts(
     now = datetime.utcnow()
     contract_defs = [
         {
-            "title": "金融数据共享协议 – 风控分析",
+            "title": "金融数据共享授权协议（风控分析）",
             "provider_id": admin.id,
             "consumer_id": analyst.id,
             "purpose": (
-                "授权分析师在差分隐私框架下对金融交易图谱执行图统计分析，"
-                "用于反洗钱模型训练与风险评估，数据不得用于其他商业目的。"
+                "授权数据分析师在受控环境中对金融交易关系图谱执行联合风控分析，"
+                "仅可输出统计结果与证明材料，不得导出原始敏感字段。"
             ),
             "valid_from": now - timedelta(days=30),
             "valid_until": now + timedelta(days=335),
-            "accessible_fields": ["node_id", "edge_weight", "transaction_amount"],
+            "accessible_fields": ["node_id", "edge_weight", "risk_tag", "transaction_amount"],
             "allowed_algorithms": ["graph_sdp", "gs_ldp", "vpcs"],
             "privacy_budget_limit": 2.0,
             "status": ContractStatus.active,
         },
         {
-            "title": "医疗数据发布授权协议",
+            "title": "医疗科研脱敏数据使用协议",
             "provider_id": analyst.id,
             "consumer_id": auditor.id,
             "purpose": (
-                "授权审计员对医疗协作网络执行 k-度匿名化处理后的统计查询，"
-                "用于医疗质量评估报告，须遵守 HIPAA 相关要求。"
+                "授权科研审查方对医疗协同诊疗网络执行匿名化统计分析，"
+                "全过程需满足科研合规审批与患者隐私保护要求。"
             ),
             "valid_from": now - timedelta(days=15),
             "valid_until": now + timedelta(days=180),
-            "accessible_fields": ["node_type", "edge_label", "degree"],
+            "accessible_fields": ["node_type", "edge_label", "degree", "cluster_score"],
             "allowed_algorithms": ["ndkd", "gcc_sdp"],
             "privacy_budget_limit": 1.5,
             "status": ContractStatus.active,
         },
         {
-            "title": "政务数据开放共享协议（演示）",
+            "title": "政务开放数据共享授权协议",
             "provider_id": admin.id,
             "consumer_id": demo.id,
             "purpose": (
-                "演示账号在沙箱环境中访问政务开放数据图，"
-                "体验 ZK-GCN 推理证明与审计链验证功能，仅用于平台演示。"
+                "授权开放服务账号在政务沙箱中访问目录化政务关系数据，"
+                "用于公共服务分析、可验证推理与审计核验。"
             ),
-            "valid_from": now,
-            "valid_until": now + timedelta(days=90),
-            "accessible_fields": ["node_label", "edge_type"],
+            "valid_from": now - timedelta(days=3),
+            "valid_until": now + timedelta(days=120),
+            "accessible_fields": ["node_label", "edge_type", "service_code"],
             "allowed_algorithms": ["zkgcn", "vpcs"],
             "privacy_budget_limit": 1.0,
-            "status": ContractStatus.draft,
+            "status": ContractStatus.pending,
+        },
+        {
+            "title": "企业画像联合分析授权协议",
+            "provider_id": admin.id,
+            "consumer_id": auditor.id,
+            "purpose": (
+                "支持企业风控关联图谱的画像构建与审计复核，"
+                "允许输出风险等级、关系摘要与模型解释，不得导出明细原始记录。"
+            ),
+            "valid_from": now - timedelta(days=20),
+            "valid_until": now + timedelta(days=240),
+            "accessible_fields": ["entity_id", "shareholder_path", "risk_level", "case_count"],
+            "allowed_algorithms": ["graph_sdp", "zkgcn"],
+            "privacy_budget_limit": 1.8,
+            "status": ContractStatus.active,
+        },
+        {
+            "title": "城市交通出行网络共享协议",
+            "provider_id": admin.id,
+            "consumer_id": analyst.id,
+            "purpose": (
+                "支持城市交通出行网络的路径约束查询、拥堵传播分析和治理评估，"
+                "仅用于公共服务优化，不得识别个体出行轨迹。"
+            ),
+            "valid_from": now - timedelta(days=10),
+            "valid_until": now + timedelta(days=150),
+            "accessible_fields": ["station_id", "route_segment", "travel_time", "region_code"],
+            "allowed_algorithms": ["vpcs", "graph_sdp"],
+            "privacy_budget_limit": 1.2,
+            "status": ContractStatus.suspended,
+        },
+        {
+            "title": "社交关系网络研究访问协议",
+            "provider_id": analyst.id,
+            "consumer_id": demo.id,
+            "purpose": (
+                "支持匿名化社交关系网络的算法稳定性验证与教学研究，"
+                "禁止输出可逆识别信息或传播明细。"
+            ),
+            "valid_from": now - timedelta(days=120),
+            "valid_until": now - timedelta(days=2),
+            "accessible_fields": ["node_degree", "group_id", "relation_type"],
+            "allowed_algorithms": ["gs_ldp", "ndkd"],
+            "privacy_budget_limit": 0.8,
+            "status": ContractStatus.terminated,
         },
     ]
 
@@ -357,20 +438,21 @@ async def _seed_contracts(
 async def _seed_audit_logs(
     session, users: dict[str, User], assets: dict[str, Asset]
 ) -> None:
-    """Create 10 sample audit log entries covering a variety of operations."""
+    """Create curated audit log entries covering the major platform workflows."""
     admin   = users["admin"]
     analyst = users["analyst"]
     auditor = users["auditor"]
     demo    = users["demo"]
 
-    finance_asset  = assets.get("金融交易图谱")
-    medical_asset  = assets.get("医疗协作网络")
-    gov_asset      = assets.get("政务开放数据图")
-    social_asset   = assets.get("通用社交网络")
+    finance_asset  = assets.get("金融交易关系图谱")
+    medical_asset  = assets.get("医疗协同诊疗网络")
+    gov_asset      = assets.get("政务开放数据关联图")
+    traffic_asset  = assets.get("城市交通出行网络")
+    social_asset   = assets.get("通用社交关系网络")
 
     # Check if audit logs already seeded (look for a known action)
     row = await session.execute(
-        select(AuditLog).where(AuditLog.action == "系统初始化").limit(1)
+        select(AuditLog).where(AuditLog.action == "平台就绪检查").limit(1)
     )
     if row.scalar_one_or_none():
         print("  [skip] audit logs already seeded")
@@ -379,73 +461,150 @@ async def _seed_audit_logs(
     log_defs = [
         dict(
             username=admin.username, role="admin", user_id=admin.id,
-            action="系统初始化",
+            action="平台就绪检查",
             target_type="system", target_id="0",
             result=AuditResult.success,
-            detail={"message": "平台数据库初始化完成，种子数据加载成功。"},
+            detail={"message": "平台核心模块初始化完成，基线数据包加载成功。"},
         ),
         dict(
             username=admin.username, role="admin", user_id=admin.id,
-            action="创建资产",
+            action="登记资产",
             target_type="asset", target_id=str(finance_asset.id) if finance_asset else "1",
             result=AuditResult.success,
-            detail={"asset_name": "金融交易图谱", "industry": "finance", "node_count": 50},
+            detail={"asset_name": "金融交易关系图谱", "industry": "finance", "node_count": 50, "edge_count": 154},
+        ),
+        dict(
+            username=admin.username, role="admin", user_id=admin.id,
+            action="生成图快照",
+            target_type="asset", target_id=str(medical_asset.id) if medical_asset else "2",
+            result=AuditResult.success,
+            detail={"asset_name": "医疗协同诊疗网络", "snapshot_version": "v2026.04", "node_count": 40, "edge_count": 96},
         ),
         dict(
             username=analyst.username, role="analyst", user_id=analyst.id,
-            action="运行隐私算法",
+            action="提交合约审批",
+            target_type="contract", target_id="3",
+            result=AuditResult.success,
+            detail={"title": "政务开放数据共享授权协议", "status": "pending", "consumer": demo.username},
+        ),
+        dict(
+            username=auditor.username, role="auditor", user_id=auditor.id,
+            action="激活合约",
+            target_type="contract", target_id="1",
+            result=AuditResult.success,
+            detail={"title": "金融数据共享授权协议（风控分析）", "status": "active"},
+        ),
+        dict(
+            username=analyst.username, role="analyst", user_id=analyst.id,
+            action="授权评估",
+            target_type="asset", target_id=str(finance_asset.id) if finance_asset else "1",
+            result=AuditResult.success,
+            detail={"operation": "analyze", "matched_contract": "金融数据共享授权协议（风控分析）", "decision": "allow"},
+        ),
+        dict(
+            username=analyst.username, role="analyst", user_id=analyst.id,
+            action="运行Graph-SDP",
             target_type="privacy_task", target_id="1",
             result=AuditResult.success,
-            detail={"algorithm": "graph_sdp", "epsilon": 1.0, "elapsed_ms": 23.5},
+            detail={"asset_name": "金融交易关系图谱", "epsilon": 1.0, "elapsed_ms": 23.5},
+        ),
+        dict(
+            username=analyst.username, role="analyst", user_id=analyst.id,
+            action="运行GCC-SDP",
+            target_type="privacy_task", target_id="2",
+            result=AuditResult.success,
+            detail={"asset_name": "医疗协同诊疗网络", "epsilon": 0.8, "elapsed_ms": 18.4},
+        ),
+        dict(
+            username=analyst.username, role="analyst", user_id=analyst.id,
+            action="运行GS-LDP",
+            target_type="privacy_task", target_id="3",
+            result=AuditResult.success,
+            detail={"asset_name": "企业风控关联图谱", "epsilon": 1.5, "elapsed_ms": 29.8},
+        ),
+        dict(
+            username=auditor.username, role="auditor", user_id=auditor.id,
+            action="运行NDKD",
+            target_type="privacy_task", target_id="4",
+            result=AuditResult.success,
+            detail={"asset_name": "医疗协同诊疗网络", "k": 3, "elapsed_ms": 45.2},
         ),
         dict(
             username=analyst.username, role="analyst", user_id=analyst.id,
             action="执行VPCS查询",
             target_type="vpcs_query", target_id="1",
             result=AuditResult.success,
-            detail={"source": "0", "target": "10", "verify_result": True, "elapsed_ms": 12.1},
+            detail={"asset_name": "城市交通出行网络", "source": "0", "target": "10", "verify_result": True, "elapsed_ms": 12.1},
+        ),
+        dict(
+            username=analyst.username, role="analyst", user_id=analyst.id,
+            action="校验VPCS证明",
+            target_type="vpcs_query", target_id="1",
+            result=AuditResult.success,
+            detail={"proof_hash": "vpcs-proof-20260426", "verify_result": True},
         ),
         dict(
             username=auditor.username, role="auditor", user_id=auditor.id,
-            action="创建资产",
-            target_type="asset", target_id=str(medical_asset.id) if medical_asset else "2",
+            action="执行zkGCN推理",
+            target_type="zkgcn_proof", target_id="1",
             result=AuditResult.success,
-            detail={"asset_name": "医疗协作网络", "industry": "medical", "node_count": 40},
-        ),
-        dict(
-            username=analyst.username, role="analyst", user_id=analyst.id,
-            action="运行隐私算法",
-            target_type="privacy_task", target_id="2",
-            result=AuditResult.success,
-            detail={"algorithm": "ndkd", "k": 3, "epsilon": 1.0, "elapsed_ms": 45.2},
-        ),
-        dict(
-            username=demo.username, role="demo", user_id=demo.id,
-            action="访问资产",
-            target_type="asset", target_id=str(gov_asset.id) if gov_asset else "3",
-            result=AuditResult.warning,
-            detail={"reason": "演示账号访问受限资产", "asset_name": "政务开放数据图"},
+            detail={"asset_name": "政务开放数据关联图", "model_type": "gcn", "verify_result": True, "elapsed_ms": 88.3},
         ),
         dict(
             username=admin.username, role="admin", user_id=admin.id,
-            action="创建合约",
-            target_type="contract", target_id="1",
+            action="生成风险报告",
+            target_type="risk_report", target_id="20260426",
             result=AuditResult.success,
-            detail={"title": "金融数据共享协议 – 风控分析", "status": "active"},
-        ),
-        dict(
-            username=analyst.username, role="analyst", user_id=analyst.id,
-            action="ZK-GCN推理",
-            target_type="zkgcn_proof", target_id="1",
-            result=AuditResult.success,
-            detail={"model_type": "gcn", "verify_result": True, "elapsed_ms": 88.3},
+            detail={"summary": "风险总体可控，高危事件已进入复核流程。"},
         ),
         dict(
             username=auditor.username, role="auditor", user_id=auditor.id,
             action="验证审计链",
             target_type="audit_log", target_id="all",
             result=AuditResult.success,
-            detail={"chain_intact": True, "total_records": 9},
+            detail={"chain_intact": True, "total_records": 15},
+        ),
+        dict(
+            username=demo.username, role="demo", user_id=demo.id,
+            action="访问资产",
+            target_type="asset", target_id=str(social_asset.id) if social_asset else "6",
+            result=AuditResult.success,
+            detail={"asset_name": "通用社交关系网络", "operation": "read", "channel": "sandbox"},
+        ),
+        dict(
+            username=admin.username, role="admin", user_id=admin.id,
+            action="运行行业场景",
+            target_type="scenario", target_id="finance",
+            result=AuditResult.success,
+            detail={"title": "金融联合风控", "modules": ["vpcs", "gs_ldp", "risk"]},
+        ),
+        dict(
+            username=analyst.username, role="analyst", user_id=analyst.id,
+            action="读取资产详情",
+            target_type="asset", target_id=str(traffic_asset.id) if traffic_asset else "5",
+            result=AuditResult.success,
+            detail={"asset_name": "城市交通出行网络", "view": "detail_panel"},
+        ),
+        dict(
+            username=auditor.username, role="auditor", user_id=auditor.id,
+            action="复核风险事件",
+            target_type="risk_event", target_id="4",
+            result=AuditResult.warning,
+            detail={"event_type": "verify_failure", "status": "investigating"},
+        ),
+        dict(
+            username=admin.username, role="admin", user_id=admin.id,
+            action="巡检系统接口",
+            target_type="system", target_id="diagnostics",
+            result=AuditResult.success,
+            detail={"checked": ["/health", "/api/assets", "/api/contracts", "/api/risks", "/api/audit/logs"]},
+        ),
+        dict(
+            username=auditor.username, role="auditor", user_id=auditor.id,
+            action="创建资产",
+            target_type="asset", target_id=str(medical_asset.id) if medical_asset else "2",
+            result=AuditResult.success,
+            detail={"asset_name": "医疗协同诊疗网络", "industry": "medical", "node_count": 40},
         ),
     ]
 
@@ -472,50 +631,44 @@ async def _seed_demo_scenarios(
     scenario_defs = [
         {
             "scenario_key": ScenarioKey.finance,
-            "title": "金融数据安全共享",
+            "title": "金融联合风控",
             "description": (
-                "模拟金融机构间的数据共享场景：在保护用户隐私前提下，"
-                "通过 VPCS 安全查询资金流转路径，并使用 GS-LDP 对交易网络"
-                "度分布进行本地差分隐私保护，最后进行风险评估。"
+                "围绕联合风控、资金链核验与风险共治，打通资产治理、授权、可验证查询与风险处置流程。"
             ),
-            "asset_name": "金融交易图谱",
+            "asset_name": "金融交易关系图谱",
             "steps": [
-                {"step": 1, "title": "注册金融图数据资产", "description": "50节点：用户/账户/商户"},
-                {"step": 2, "title": "执行VPCS约束最短路径查询", "description": "资金流转路径验证"},
-                {"step": 3, "title": "运行GS-LDP本地差分隐私", "description": "交易度分布脱敏"},
-                {"step": 4, "title": "风险评估", "description": "检测异常访问频率与预算超支"},
+                {"step": 1, "title": "确认资产与授权边界", "description": "核验金融交易关系图谱及共享协议"},
+                {"step": 2, "title": "执行 VPCS 路径查询", "description": "输出受约束最优路径与 proof hash"},
+                {"step": 3, "title": "运行 GS-LDP", "description": "形成脱敏统计结果与指标对比"},
+                {"step": 4, "title": "生成联合风控结论", "description": "同步风险评分与治理建议"},
             ],
         },
         {
             "scenario_key": ScenarioKey.medical,
-            "title": "医疗数据隐私发布",
+            "title": "医疗科研共享",
             "description": (
-                "模拟医疗机构的患者数据发布场景：使用 NDKD k-度匿名化保护"
-                "患者节点的度数信息，通过 GCC-SDP 差分隐私发布聚类系数统计，"
-                "并生成隐私保护分析报告。"
+                "围绕科研共享与隐私保护评估，展示医疗协同诊疗网络的匿名化、统计发布与审计闭环。"
             ),
-            "asset_name": "医疗协作网络",
+            "asset_name": "医疗协同诊疗网络",
             "steps": [
-                {"step": 1, "title": "注册医疗图数据资产", "description": "40节点：医院/患者/疾病/检测"},
-                {"step": 2, "title": "运行NDKD k-度匿名化", "description": "保护患者就诊连接模式"},
-                {"step": 3, "title": "运行GCC-SDP差分隐私发布", "description": "聚类系数脱敏"},
-                {"step": 4, "title": "生成隐私保护报告", "description": "综合评估隐私保护效果"},
+                {"step": 1, "title": "加载科研共享资产", "description": "确认场景、范围与合规标签"},
+                {"step": 2, "title": "运行 NDKD 匿名化", "description": "保护患者连接模式与结构特征"},
+                {"step": 3, "title": "发布 GCC-SDP 统计结果", "description": "输出聚类系数脱敏指标"},
+                {"step": 4, "title": "生成科研共享报告", "description": "沉淀审计与使用说明"},
             ],
         },
         {
             "scenario_key": ScenarioKey.government,
-            "title": "政务数据确权流通",
+            "title": "政务数据开放",
             "description": (
-                "模拟政府数据开放场景：注册政务图资产并生成确权凭证，"
-                "创建数据共享合约并进行授权管理，运行 ZK-GCN 推理验证，"
-                "最后验证全链路审计日志的完整性。"
+                "围绕政务数据开放流通，展示资产确权、共享授权、可验证推理与审计链校验的完整流程。"
             ),
-            "asset_name": "政务开放数据图",
+            "asset_name": "政务开放数据关联图",
             "steps": [
-                {"step": 1, "title": "注册政务图数据资产", "description": "45节点：企业/许可证/区域/交通"},
-                {"step": 2, "title": "创建数据共享合约", "description": "合约激活与授权管理"},
-                {"step": 3, "title": "运行ZK-GCN零知识推理", "description": "证明模型正确执行"},
-                {"step": 4, "title": "验证审计链完整性", "description": "哈希链篡改检测演示"},
+                {"step": 1, "title": "登记政务开放资产", "description": "生成确权凭证与图快照摘要"},
+                {"step": 2, "title": "创建共享授权协议", "description": "完成审批与可调用范围约束"},
+                {"step": 3, "title": "运行 zkGCN 推理", "description": "输出推理结果与零知识证明"},
+                {"step": 4, "title": "校验审计链完整性", "description": "展示篡改可检测能力"},
             ],
         },
     ]
@@ -546,14 +699,16 @@ async def _seed_demo_scenarios(
 async def _seed_risk_events(
     session, users: dict[str, User], assets: dict[str, Asset]
 ) -> None:
-    """Create 5 sample risk events."""
+    """Create curated risk events for the monitoring dashboard."""
     admin   = users["admin"]
     analyst = users["analyst"]
     demo    = users["demo"]
 
-    finance_asset = assets.get("金融交易图谱")
-    medical_asset = assets.get("医疗协作网络")
-    gov_asset     = assets.get("政务开放数据图")
+    finance_asset = assets.get("金融交易关系图谱")
+    medical_asset = assets.get("医疗协同诊疗网络")
+    gov_asset     = assets.get("政务开放数据关联图")
+    traffic_asset = assets.get("城市交通出行网络")
+    enterprise_asset = assets.get("企业风控关联图谱")
 
     # Check idempotency
     row = await session.execute(
@@ -565,91 +720,123 @@ async def _seed_risk_events(
 
     risk_defs = [
         {
-            "event_type": RiskEventType.anomaly_access,
-            "severity": RiskSeverity.high,
-            "asset_id": finance_asset.id if finance_asset else None,
-            "user_id": demo.id,
-            "description": (
-                "演示账号在非工作时间连续访问金融交易图谱超过 20 次，"
-                "触发异常访问检测规则。"
-            ),
-            "detail": {
-                "access_count": 23,
-                "time_window": "2026-04-25 22:00~23:59",
-                "threshold": 10,
-                "ip_address": "192.168.1.105",
-            },
-            "risk_score": 78.5,
-            "status": RiskStatus.investigating,
-        },
-        {
-            "event_type": RiskEventType.budget_exceeded,
-            "severity": RiskSeverity.medium,
-            "asset_id": medical_asset.id if medical_asset else None,
-            "user_id": analyst.id,
-            "description": (
-                "分析师在医疗协作网络上累计消耗隐私预算 1.8，"
-                "超过合约规定上限 1.5，系统自动终止后续查询。"
-            ),
-            "detail": {
-                "budget_used": 1.8,
-                "budget_limit": 1.5,
-                "algorithm": "ndkd",
-                "last_epsilon": 0.5,
-            },
-            "risk_score": 55.0,
-            "status": RiskStatus.resolved,
-        },
-        {
             "event_type": RiskEventType.unauthorized_access,
             "severity": RiskSeverity.critical,
-            "asset_id": gov_asset.id if gov_asset else None,
+            "asset_id": enterprise_asset.id if enterprise_asset else None,
             "user_id": demo.id,
             "description": (
-                "演示账号尝试访问未授权的政务开放数据图原始节点属性，"
-                "授权策略拦截请求并记录安全事件。"
+                "跨机构联合建模任务尝试读取未授权的企业诉讼明细字段，"
+                "RBAC/ABAC 策略已阻断本次访问。"
             ),
             "detail": {
-                "attempted_field": "company_license_number",
-                "policy_id": 3,
+                "attempted_field": "litigation_detail",
+                "policy_id": 4,
                 "blocked": True,
             },
             "risk_score": 92.0,
             "status": RiskStatus.open,
         },
         {
-            "event_type": RiskEventType.verify_failure,
+            "event_type": RiskEventType.budget_exceeded,
             "severity": RiskSeverity.high,
-            "asset_id": finance_asset.id if finance_asset else None,
+            "asset_id": medical_asset.id if medical_asset else None,
             "user_id": analyst.id,
             "description": (
-                "VPCS 查询结果证明验证失败，路径哈希与图加密摘要不一致，"
-                "疑似查询结果被篡改，触发完整性告警。"
+                "医疗科研任务累计消耗隐私预算 1.9，超过协议约定上限 1.5，"
+                "系统已暂停后续查询并要求复核。"
             ),
             "detail": {
-                "query_id": 5,
-                "proof_hash": "abcdef1234",
-                "expected_hash": "1234abcdef",
+                "budget_used": 1.9,
+                "budget_limit": 1.5,
+                "algorithm": "gcc_sdp",
+                "last_epsilon": 0.6,
+            },
+            "risk_score": 76.0,
+            "status": RiskStatus.investigating,
+        },
+        {
+            "event_type": RiskEventType.expired_access,
+            "severity": RiskSeverity.medium,
+            "asset_id": traffic_asset.id if traffic_asset else None,
+            "user_id": analyst.id,
+            "description": (
+                "城市交通出行网络的共享协议已暂停，但仍有路径查询任务尝试继续执行，"
+                "系统已自动拦截。"
+            ),
+            "detail": {
+                "contract_title": "城市交通出行网络共享协议",
+                "contract_status": "suspended",
+                "blocked": True,
+            },
+            "risk_score": 58.0,
+            "status": RiskStatus.resolved,
+        },
+        {
+            "event_type": RiskEventType.verify_failure,
+            "severity": RiskSeverity.high,
+            "asset_id": gov_asset.id if gov_asset else None,
+            "user_id": analyst.id,
+            "description": (
+                "zkGCN 推理结果校验时出现 proof hash 不一致，"
+                "系统判定模型参数或输出结果存在篡改风险。"
+            ),
+            "detail": {
+                "proof_hash": "zk-proof-20260426",
+                "verify_result": False,
                 "tampered": True,
             },
-            "risk_score": 85.0,
+            "risk_score": 84.0,
             "status": RiskStatus.investigating,
+        },
+        {
+            "event_type": RiskEventType.anomaly_access,
+            "severity": RiskSeverity.medium,
+            "asset_id": finance_asset.id if finance_asset else None,
+            "user_id": demo.id,
+            "description": (
+                "短时间内针对金融交易关系图谱发起高频路径查询，"
+                "访问频率超过安全基线，已触发行为预警。"
+            ),
+            "detail": {
+                "access_count": 27,
+                "time_window": "2026-04-26 09:00~09:20",
+                "threshold": 12,
+            },
+            "risk_score": 61.0,
+            "status": RiskStatus.open,
         },
         {
             "event_type": RiskEventType.data_quality,
             "severity": RiskSeverity.low,
-            "asset_id": None,
+            "asset_id": traffic_asset.id if traffic_asset else None,
             "user_id": admin.id,
             "description": (
-                "社交网络图谱快照检测到 3 个孤立节点（度数为0），"
-                "可能影响隐私算法效果，建议数据清洗。"
+                "城市交通出行网络检测到部分站点边属性缺失，"
+                "建议补齐通行时长与拥堵等级后再执行评估任务。"
             ),
             "detail": {
-                "isolated_nodes": 3,
-                "asset_name": "通用社交网络",
-                "recommendation": "执行图修复或排除孤立节点后重新运行算法",
+                "missing_edge_attributes": 7,
+                "asset_name": "城市交通出行网络",
+                "recommendation": "补齐 travel_time 与 congestion_level 字段",
             },
-            "risk_score": 20.0,
+            "risk_score": 24.0,
+            "status": RiskStatus.resolved,
+        },
+        {
+            "event_type": RiskEventType.anomaly_access,
+            "severity": RiskSeverity.low,
+            "asset_id": gov_asset.id if gov_asset else None,
+            "user_id": admin.id,
+            "description": (
+                "政务开放数据关联图在晚间窗口出现批量元数据刷新，"
+                "虽属授权运维任务，但已记录为提示级巡检事件。"
+            ),
+            "detail": {
+                "job_type": "metadata_refresh",
+                "window": "2026-04-26 22:00",
+                "operator": "system-maintenance",
+            },
+            "risk_score": 12.0,
             "status": RiskStatus.resolved,
         },
     ]

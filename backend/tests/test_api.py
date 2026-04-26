@@ -9,7 +9,10 @@ Run:
 
 import sys
 import os
+from pathlib import Path
 
+TEST_DB_PATH = Path(__file__).with_name("test_digital_security.db")
+os.environ["DIGITAL_SECURITY_DB_URL"] = f"sqlite+aiosqlite:///./tests/{TEST_DB_PATH.name}"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
@@ -27,7 +30,12 @@ from app.main import app
 async def init_database():
     """Initialize the test database before any tests run."""
     from app.database import init_db
+    if TEST_DB_PATH.exists():
+        TEST_DB_PATH.unlink()
     await init_db()
+    yield
+    if TEST_DB_PATH.exists():
+        TEST_DB_PATH.unlink()
 
 
 @pytest_asyncio.fixture
@@ -80,14 +88,14 @@ async def test_health(client: AsyncClient):
 async def test_create_asset(client: AsyncClient):
     """POST /api/assets with valid data must return 200 or 201."""
     payload = {
-        "name": "测试金融图谱_API",
+        "name": "金融交易关系图谱-接口校验样本",
         "industry": "finance",
-        "description": "API测试用金融图谱资产",
+        "description": "用于接口校验的金融关系图谱样本，覆盖账户、交易与关联路径。",
         "subject_type": "金融实体",
-        "node_meaning": "用户/账户",
-        "edge_meaning": "交易关系",
+        "node_meaning": "客户、账户、商户",
+        "edge_meaning": "交易、持有、担保关系",
         "sensitivity_level": 3,
-        "compliance_tags": ["GDPR"],
+        "compliance_tags": ["金融数据安全", "接口验证"],
         "status": "active",
     }
     resp = await client.post("/api/assets", json=payload)
@@ -123,11 +131,11 @@ async def test_list_assets(client: AsyncClient):
 async def test_create_contract(client: AsyncClient):
     """POST /api/contracts with valid data must return 200 or 201."""
     payload = {
-        "title": "API测试合约",
+        "title": "金融数据共享授权协议（接口校验）",
         "provider_id": None,
         "consumer_id": None,
-        "purpose": "API smoke test",
-        "accessible_fields": ["node_id"],
+        "purpose": "用于接口联调校验的受控共享协议，不涉及生产明细数据。",
+        "accessible_fields": ["node_id", "edge_weight"],
         "allowed_algorithms": ["graph_sdp"],
         "privacy_budget_limit": 1.0,
         "status": "draft",

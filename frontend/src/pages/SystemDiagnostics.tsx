@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Activity, RefreshCw, CheckCircle2, XCircle } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { getHealth, getAssets, getContracts, getAuditLogs, getRisks } from '../api/endpoints'
+import { getHealth, getAssets, getContracts, getAuditLogs, getRisks, getDemoScenarios } from '../api/endpoints'
 import { safeString, toArray, toObject } from '../api/normalizers'
 
 interface DiagnosticResult {
@@ -41,6 +41,7 @@ export default function SystemDiagnostics() {
       { label: '合约列表', path: '/api/contracts', run: () => getContracts() },
       { label: '审计日志', path: '/api/audit/logs?limit=5', run: () => getAuditLogs({ limit: 5 }) },
       { label: '风险事件', path: '/api/risks', run: () => getRisks() },
+      { label: '场景配置', path: '/api/demo/scenarios', run: () => getDemoScenarios() },
     ]
 
     const resolved = await Promise.all(checks.map(async (check) => {
@@ -79,7 +80,7 @@ export default function SystemDiagnostics() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black text-tech">系统诊断</h1>
-          <p className="text-slate-400 text-sm mt-0.5">比赛前快速确认核心接口可访问、可返回、可展示。</p>
+          <p className="text-slate-400 text-sm mt-0.5">用于演示前自检核心接口状态、响应时延与返回摘要。</p>
         </div>
         <button onClick={runDiagnostics} className="btn btn-secondary gap-2" disabled={loading}>
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -146,8 +147,8 @@ export default function SystemDiagnostics() {
         <h2 className="section-header">使用建议</h2>
         <div className="space-y-3 text-sm text-slate-300">
           <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />比赛开始前先打开本页，确保 5 个核心接口全部 OK。</div>
-          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />若某个接口 FAIL，可直接根据响应摘要判断是后端未启动、代理失败还是数据为空。</div>
-          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />若全部 OK，再切到 Dashboard、隐私实验室、VPCS 和 zkGCN 进行联调演示。</div>
+          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />若某个接口 FAIL，可根据响应摘要快速判断是后端未启动、代理异常还是数据初始化缺失。</div>
+          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />全部通过后，再依次进入驾驶舱、隐私实验室、VPCS、zkGCN 和场景页进行联调展示。</div>
         </div>
       </div>
     </div>

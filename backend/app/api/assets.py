@@ -24,6 +24,7 @@ from app.algorithms.graph_utils import (
     generate_medical_graph,
     generate_government_graph,
     generate_social_graph,
+    dict_to_graph,
     graph_to_dict,
     get_graph_stats,
 )
@@ -85,9 +86,7 @@ async def create_asset(
 
     # Build default graph snapshot
     graph_data = _build_graph_for_industry(body.industry)
-    stats = get_graph_stats(
-        __import__("app.algorithms.graph_utils", fromlist=["dict_to_graph"]).dict_to_graph(graph_data)
-    )
+    stats = get_graph_stats(dict_to_graph(graph_data))
 
     # Persist graph snapshot first (no asset_id yet)
     snap = GraphSnapshot(
@@ -163,6 +162,15 @@ async def create_asset(
         "authorization_scope": asset.authorization_scope,
         "compliance_tags": asset.compliance_tags,
         "owner_id": asset.owner_id,
+        "graph_snapshot": {
+            "id": snap.id,
+            "asset_id": asset.id,
+            "node_count": snap.node_count,
+            "edge_count": snap.edge_count,
+            "nodes": snap.nodes,
+            "edges": snap.edges,
+            "created_at": snap.created_at,
+        },
     }
 
 
@@ -213,6 +221,11 @@ async def list_assets(
             "sensitivity_level": a.sensitivity_level,
             "compliance_tags": a.compliance_tags,
             "owner_id": a.owner_id,
+            "data_source": a.data_source,
+            "subject_type": a.subject_type,
+            "node_meaning": a.node_meaning,
+            "edge_meaning": a.edge_meaning,
+            "authorization_scope": a.authorization_scope,
             "node_count": snapshots_by_id.get(a.graph_snapshot_id).node_count if snapshots_by_id.get(a.graph_snapshot_id) else 0,
             "edge_count": snapshots_by_id.get(a.graph_snapshot_id).edge_count if snapshots_by_id.get(a.graph_snapshot_id) else 0,
             "created_at": a.created_at,

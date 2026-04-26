@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import ReactECharts from 'echarts-for-react'
 import {
   Database, Plus, RefreshCw, Eye, GitBranch, Layers,
-  X, Download,
+  X, Download, CheckCircle2,
 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { getAssets, createAsset, getAsset, generateAssetGraph } from '../api/endpoints'
@@ -47,6 +47,7 @@ interface Asset {
   ownership_credential?: string
   chain_record?: string | Record<string, unknown>
   created_at?: string
+  updated_at?: string
   graph_snapshot?: GraphData & { node_count?: number; edge_count?: number }
 }
 
@@ -58,8 +59,8 @@ interface GraphData {
 const sensitivityColor = ['', '#10b981', '#22d3ee', '#f59e0b', '#f97316', '#ef4444']
 const sensitivityLabel = ['', '极低', '低', '中', '高', '极高']
 const statusMap: Record<string, { label: string; cls: string }> = {
-  active:   { label: '已激活', cls: 'badge-green' },
-  inactive: { label: '未激活', cls: 'badge-gray' },
+  active:   { label: '已生效', cls: 'badge-green' },
+  inactive: { label: '未启用', cls: 'badge-gray' },
   pending:  { label: '待审核', cls: 'badge-yellow' },
   draft:    { label: '草稿',   cls: 'badge-gray' },
 }
@@ -103,15 +104,16 @@ export default function DataAssets() {
   const [graphError, setGraphError] = useState('')
   const [formError, setFormError] = useState('')
   const [formLoading, setFormLoading] = useState(false)
+  const [actionFeedback, setActionFeedback] = useState<{ tone: 'success' | 'info'; text: string } | null>(null)
   const [form, setForm] = useState({
     name: '',
     industry: 'finance',
     data_source: '',
-    subject_type: '自然人',
+    subject_type: '机构',
     node_meaning: '',
     edge_meaning: '',
     sensitivity_level: 3,
-    authorization_scope: '内部',
+    authorization_scope: '合规授权',
     compliance_tags: [] as string[],
     description: '',
   })
@@ -137,10 +139,14 @@ export default function DataAssets() {
     setFormError('')
     setFormLoading(true)
     try {
-      await createAsset(form as unknown as Record<string, unknown>)
+      const created = await createAsset(form as unknown as Record<string, unknown>)
       setShowForm(false)
-      setForm({ name: '', industry: 'finance', data_source: '', subject_type: '自然人', node_meaning: '', edge_meaning: '', sensitivity_level: 3, authorization_scope: '内部', compliance_tags: [], description: '' })
+      setForm({ name: '', industry: 'finance', data_source: '', subject_type: '机构', node_meaning: '', edge_meaning: '', sensitivity_level: 3, authorization_scope: '合规授权', compliance_tags: [], description: '' })
+      setActionFeedback({ tone: 'success', text: '资产已登记成功，系统已同步生成初始图快照。' })
       await loadAssets()
+      if (created) {
+        await handleViewAsset(created as Asset)
+      }
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : '创建失败')
     } finally {
@@ -168,6 +174,7 @@ export default function DataAssets() {
     try {
       const data = await generateAssetGraph(getId(selectedAsset))
       setGraphData(getGraphData(data?.graph ?? data))
+      setActionFeedback({ tone: 'info', text: '图快照已刷新，可用于后续算法执行与图结构预览。' })
     } catch (err: unknown) {
       setGraphError(err instanceof Error ? err.message : '生成失败')
     } finally {
@@ -235,6 +242,13 @@ export default function DataAssets() {
         </div>
       ) : null}
 
+      {actionFeedback ? (
+        <div className={actionFeedback.tone === 'success' ? 'alert-success flex items-center gap-2' : 'alert-info flex items-center gap-2'}>
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+          <span>{actionFeedback.text}</span>
+        </div>
+      ) : null}
+
       {/* Create form modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setShowForm(false)}>
@@ -257,7 +271,7 @@ export default function DataAssets() {
                 </div>
                 <div>
                   <label className="form-label">数据来源</label>
-                  <input className="form-input" value={form.data_source} onChange={e => setForm(f => ({ ...f, data_source: e.target.value }))} placeholder="如：央行征信中心" />
+                  <input className="form-input" value={form.data_source} onChange={e => setForm(f => ({ ...f, data_source: e.target.value }))} placeholder="如：金融交易监测专线脱敏库" />
                 </div>
                 <div>
                   <label className="form-label">主体类型</label>
@@ -267,11 +281,11 @@ export default function DataAssets() {
                 </div>
                 <div>
                   <label className="form-label">节点含义</label>
-                  <input className="form-input" value={form.node_meaning} onChange={e => setForm(f => ({ ...f, node_meaning: e.target.value }))} placeholder="如：企业、个人" />
+                  <input className="form-input" value={form.node_meaning} onChange={e => setForm(f => ({ ...f, node_meaning: e.target.value }))} placeholder="如：企业、账户、设备、商户" />
                 </div>
                 <div>
                   <label className="form-label">边含义</label>
-                  <input className="form-input" value={form.edge_meaning} onChange={e => setForm(f => ({ ...f, edge_meaning: e.target.value }))} placeholder="如：借贷关系、担保关系" />
+                  <input className="form-input" value={form.edge_meaning} onChange={e => setForm(f => ({ ...f, edge_meaning: e.target.value }))} placeholder="如：交易关系、转诊关系、审批关系" />
                 </div>
                 <div>
                   <label className="form-label">授权范围</label>
@@ -299,7 +313,7 @@ export default function DataAssets() {
               </div>
               <div>
                 <label className="form-label">描述</label>
-                <textarea className="form-input h-20 resize-none" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="数据集描述信息..." />
+                <textarea className="form-input h-20 resize-none" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="填写业务背景、治理目标、使用边界与产出方式。" />
               </div>
               {formError && <p className="alert-error">{formError}</p>}
               <div className="flex gap-3 justify-end pt-2">
@@ -334,8 +348,11 @@ export default function DataAssets() {
                     <th>行业</th>
                     <th>节点数</th>
                     <th>边数</th>
+                    <th>数据来源</th>
                     <th>敏感度</th>
+                    <th>合规标签</th>
                     <th>状态</th>
+                    <th>创建时间</th>
                     <th>操作</th>
                   </tr>
                 </thead>
@@ -350,12 +367,22 @@ export default function DataAssets() {
                         <td><span className="badge badge-blue">{INDUSTRY_LABELS[safeString(asset?.industry)] ?? safeString(asset?.industry, '-')}</span></td>
                         <td className="font-mono text-cyan-400">{safeNumber(asset?.node_count ?? asset?.graph_snapshot?.node_count).toLocaleString()}</td>
                         <td className="font-mono text-purple-400">{safeNumber(asset?.edge_count ?? asset?.graph_snapshot?.edge_count).toLocaleString()}</td>
+                        <td className="text-slate-400 text-xs max-w-36 truncate">{safeString(asset?.data_source, '-')}</td>
                         <td>
                           <span className="font-semibold text-xs" style={{ color: sensitivityColor[lvl] }}>
                             L{lvl} {sensitivityLabel[lvl]}
                           </span>
                         </td>
+                        <td>
+                          <div className="flex flex-wrap gap-1 max-w-36">
+                            {toArray<string>(asset?.compliance_tags).slice(0, 2).map((tag) => (
+                              <span key={tag} className="badge badge-purple">{tag}</span>
+                            ))}
+                            {toArray<string>(asset?.compliance_tags).length === 0 ? <span className="text-slate-500 text-xs">-</span> : null}
+                          </div>
+                        </td>
                         <td><span className={`badge ${s.cls}`}>{s.label}</span></td>
+                        <td className="text-xs text-slate-400 whitespace-nowrap">{asset?.created_at ? dayjs(asset.created_at).format('YYYY-MM-DD') : '-'}</td>
                         <td>
                           <button onClick={() => handleViewAsset(asset)} className="btn btn-secondary text-xs py-1 px-2 gap-1">
                             <Eye className="w-3.5 h-3.5" /> 查看
@@ -375,7 +402,8 @@ export default function DataAssets() {
           {!selectedAsset ? (
             <div className="text-center py-12">
               <Layers className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-500 text-sm">选择一个资产查看详情</p>
+              <p className="text-slate-400 text-sm font-medium">从左侧资产列表选择一条记录</p>
+              <p className="text-slate-500 text-xs mt-1">这里将展示资产编号、授权范围、图快照摘要与确权信息。</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -389,13 +417,16 @@ export default function DataAssets() {
               {/* Meta info */}
               <div className="space-y-2 text-sm">
                 {[
+                  ['资产编号', safeString(selectedAsset.asset_id ?? selectedAsset.id, '-')],
                   ['行业', INDUSTRY_LABELS[safeString(selectedAsset.industry)] ?? safeString(selectedAsset.industry)],
                   ['数据来源', selectedAsset.data_source],
                   ['主体类型', selectedAsset.subject_type],
                   ['节点含义', selectedAsset.node_meaning],
                   ['边含义', selectedAsset.edge_meaning],
+                  ['资产描述', selectedAsset.description],
                   ['授权范围', selectedAsset.authorization_scope],
                   ['创建时间', selectedAsset.created_at ? dayjs(selectedAsset.created_at).format('YYYY-MM-DD HH:mm') : '-'],
+                  ['最近更新时间', selectedAsset.updated_at ? dayjs(selectedAsset.updated_at).format('YYYY-MM-DD HH:mm') : '-'],
                 ].map(([k, v]) => v ? (
                   <div key={k} className="flex gap-2">
                     <span className="text-slate-500 flex-shrink-0 w-20">{k}</span>
@@ -406,6 +437,12 @@ export default function DataAssets() {
                   <span className="text-slate-500 w-20">敏感度</span>
                   <span style={{ color: sensitivityColor[safeNumber(selectedAsset.sensitivity_level, 3)] }}>
                     L{safeNumber(selectedAsset.sensitivity_level, 3)} {sensitivityLabel[safeNumber(selectedAsset.sensitivity_level, 3)]}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-slate-500 w-20">图快照</span>
+                  <span className="text-slate-300">
+                    {safeNumber(selectedAsset?.graph_snapshot?.node_count ?? selectedAsset?.node_count).toLocaleString()} 节点 / {safeNumber(selectedAsset?.graph_snapshot?.edge_count ?? selectedAsset?.edge_count).toLocaleString()} 边
                   </span>
                 </div>
               </div>
@@ -439,12 +476,12 @@ export default function DataAssets() {
                 className="btn btn-cyan w-full gap-2 justify-center"
               >
                 {graphLoading ? <LoadingSpinner size="sm" /> : <GitBranch className="w-4 h-4" />}
-                {graphLoading ? '生成中...' : '生成图谱'}
+                {graphLoading ? '生成中...' : '生成图快照'}
               </button>
               {graphError && <p className="alert-error text-xs">{graphError}</p>}
 
               {/* Graph visualization */}
-              {graphData && (
+              {graphData ? (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs text-slate-400">
@@ -469,6 +506,8 @@ export default function DataAssets() {
                     opts={{ renderer: 'canvas' }}
                   />
                 </div>
+              ) : (
+                <div className="alert-info text-xs">当前资产尚未加载可视化快照，可点击“生成图快照”后预览图结构摘要。</div>
               )}
 
               {/* Compliance tags */}

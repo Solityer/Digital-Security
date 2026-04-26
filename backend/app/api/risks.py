@@ -12,7 +12,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import RiskEvent
+from app.models import Asset, RiskEvent, User
 from app.schemas import RiskEvaluateRequest, RiskEventCreate, RiskEventResponse
 from app.services.risk_service import (
     evaluate_risk,
@@ -21,6 +21,23 @@ from app.services.risk_service import (
 )
 
 router = APIRouter()
+
+
+async def _resolve_names(db: AsyncSession, asset_ids: list[int | None], user_ids: list[int | None]) -> tuple[dict[int, str], dict[int, str]]:
+    asset_map: dict[int, str] = {}
+    user_map: dict[int, str] = {}
+
+    wanted_assets = [asset_id for asset_id in asset_ids if asset_id is not None]
+    if wanted_assets:
+        asset_rows = await db.execute(select(Asset).where(Asset.id.in_(wanted_assets)))
+        asset_map = {asset.id: asset.name for asset in asset_rows.scalars().all()}
+
+    wanted_users = [user_id for user_id in user_ids if user_id is not None]
+    if wanted_users:
+        user_rows = await db.execute(select(User).where(User.id.in_(wanted_users)))
+        user_map = {user.id: user.username for user in user_rows.scalars().all()}
+
+    return asset_map, user_map
 
 
 # ---------------------------------------------------------------------------
@@ -59,6 +76,11 @@ async def list_risk_events(
     stmt = stmt.order_by(RiskEvent.created_at.desc()).offset(offset).limit(limit)
     rows = await db.execute(stmt)
     events = rows.scalars().all()
+    asset_names, user_names = await _resolve_names(
+        db,
+        [event.asset_id for event in events],
+        [event.user_id for event in events],
+    )
 
     return {
         "total": total,
@@ -70,6 +92,8 @@ async def list_risk_events(
                 "severity": e.severity if isinstance(e.severity, str) else e.severity.value,
                 "asset_id": e.asset_id,
                 "user_id": e.user_id,
+                "asset_name": asset_names.get(e.asset_id or -1, "未关联资产") if e.asset_id is not None else "未关联资产",
+                "username": user_names.get(e.user_id or -1, "系统任务") if e.user_id is not None else "系统任务",
                 "description": e.description,
                 "detail": e.detail,
                 "risk_score": e.risk_score,
@@ -197,6 +221,8 @@ async def get_risk_event(
     if event is None:
         raise HTTPException(status_code=404, detail=f"RiskEvent {event_id} not found.")
 
+    asset_names, user_names = await _resolve_names(db, [event.asset_id], [event.user_id])
+
     return {
         "id": event.id,
         "risk_id": event.id,
@@ -204,6 +230,8 @@ async def get_risk_event(
         "severity": event.severity if isinstance(event.severity, str) else event.severity.value,
         "asset_id": event.asset_id,
         "user_id": event.user_id,
+        "asset_name": asset_names.get(event.asset_id or -1, "未关联资产") if event.asset_id is not None else "未关联资产",
+        "username": user_names.get(event.user_id or -1, "系统任务") if event.user_id is not None else "系统任务",
         "description": event.description,
         "detail": event.detail,
         "risk_score": event.risk_score,
