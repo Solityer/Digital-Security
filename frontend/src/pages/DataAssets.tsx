@@ -15,7 +15,7 @@ const COMPLIANCE_TAGS_OPTIONS = ['GDPR', '个人信息保护法', '数据安全�
 const AUTH_SCOPES = ['公开', '内部', '合规授权', '仅限研究', '政府专用']
 
 interface Asset {
-  asset_id: string
+  id: string
   name: string
   industry: string
   data_source?: string
@@ -104,7 +104,7 @@ export default function DataAssets() {
     setLoading(true)
     try {
       const data = await getAssets()
-      setAssets(data?.assets ?? data ?? [])
+      setAssets(data?.items ?? data?.assets ?? data ?? [])
     } catch {
       setAssets([])
     } finally {
@@ -134,7 +134,7 @@ export default function DataAssets() {
     setSelectedAsset(asset)
     setGraphData(null)
     try {
-      const data = await getAsset(asset.asset_id)
+      const data = await getAsset(asset.id)
       setSelectedAsset(data?.asset ?? data)
     } catch {}
   }
@@ -144,7 +144,7 @@ export default function DataAssets() {
     setGraphLoading(true)
     setGraphError('')
     try {
-      const data = await generateAssetGraph(selectedAsset.asset_id)
+      const data = await generateAssetGraph(selectedAsset.id)
       setGraphData(data?.graph ?? data)
     } catch (err: unknown) {
       setGraphError(err instanceof Error ? err.message : '生成失败')
@@ -290,7 +290,7 @@ export default function DataAssets() {
                     const s = statusMap[asset.status ?? 'active'] ?? { label: asset.status, cls: 'badge-gray' }
                     const lvl = asset.sensitivity_level ?? 3
                     return (
-                      <tr key={asset.asset_id} className={selectedAsset?.asset_id === asset.asset_id ? 'bg-blue-900/20' : ''}>
+                      <tr key={asset.id} className={selectedAsset?.id === asset.id ? 'bg-blue-900/20' : ''}>
                         <td className="font-semibold text-slate-100">{asset.name}</td>
                         <td><span className="badge badge-blue">{asset.industry}</span></td>
                         <td className="font-mono text-cyan-400">{(asset.node_count ?? 0).toLocaleString()}</td>

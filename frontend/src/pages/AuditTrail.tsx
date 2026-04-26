@@ -8,7 +8,7 @@ import { getAuditLogs, verifyAuditChain, tamperAuditDemo } from '../api/endpoint
 import dayjs from 'dayjs'
 
 interface AuditLog {
-  log_id: string
+  id: string
   timestamp: string
   username: string
   role?: string
@@ -49,7 +49,7 @@ function ChainIndicator({ logs }: { logs: AuditLog[] }) {
       {blocks.map((log, i) => {
         const isBroken = log.chain_valid === false
         return (
-          <div key={log.log_id} className="flex items-center gap-0.5">
+          <div key={log.id} className="flex items-center gap-0.5">
             {i > 0 && (
               <div className={`w-4 h-0.5 ${isBroken ? 'bg-red-500' : 'bg-emerald-600/60'}`} />
             )}
@@ -100,7 +100,7 @@ export default function AuditTrail() {
       if (filterDateFrom) params.date_from = filterDateFrom
       if (filterDateTo)   params.date_to = filterDateTo
       const data = await getAuditLogs(params)
-      setLogs(data?.logs ?? data ?? [])
+      setLogs(data?.items ?? data?.logs ?? data ?? [])
     } catch { setLogs([]) }
     finally { setLoading(false) }
   }, [filterUsername, filterAction, filterResult, filterDateFrom, filterDateTo])
@@ -124,7 +124,7 @@ export default function AuditTrail() {
     setChainResult(null)
     try {
       const midIdx = Math.floor(logs.length / 2)
-      const logId = logs[midIdx]?.log_id
+      const logId = logs[midIdx]?.id
       if (!logId) throw new Error('无法找到日志')
       await tamperAuditDemo(logId)
       await load()
@@ -298,7 +298,7 @@ export default function AuditTrail() {
                   const r = RESULT_MAP[log.result] ?? { label: log.result, cls: 'badge-gray' }
                   const isTampered = log.chain_valid === false || log.result === 'tampered'
                   return (
-                    <tr key={log.log_id} className={isTampered ? 'bg-red-950/20' : ''}>
+                    <tr key={log.id} className={isTampered ? 'bg-red-950/20' : ''}>
                       <td className="text-slate-500 text-xs">{idx + 1}</td>
                       <td className="font-mono text-xs text-slate-400">
                         {log.timestamp ? dayjs(log.timestamp).format('MM-DD HH:mm:ss') : '-'}

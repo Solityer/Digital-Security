@@ -15,7 +15,7 @@ export const getAsset = (id: string) =>
   client.get(`/api/assets/${id}`).then((r) => r.data)
 
 export const generateAssetGraph = (id: string) =>
-  client.post(`/api/assets/${id}/generate-graph`).then((r) => r.data)
+  client.post(`/api/assets/${id}/graph/generate`).then((r) => r.data)
 
 // ─── Contracts ───────────────────────────────────────────────────────────────
 export const getContracts = () =>
@@ -35,10 +35,10 @@ export const getAuditLogs = (params?: Record<string, unknown>) =>
   client.get('/api/audit/logs', { params }).then((r) => r.data)
 
 export const verifyAuditChain = () =>
-  client.get('/api/audit/verify-chain').then((r) => r.data)
+  client.post('/api/audit/verify-chain').then((r) => r.data)
 
 export const tamperAuditDemo = (logId: string) =>
-  client.post(`/api/audit/tamper-demo/${logId}`).then((r) => r.data)
+  client.post('/api/audit/tamper-demo', { log_id: logId ? Number(logId) : null }).then((r) => r.data)
 
 // ─── Privacy Lab – DP algorithms ─────────────────────────────────────────────
 export const runGraphSDP = (data: Record<string, unknown>) =>

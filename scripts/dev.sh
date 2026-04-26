@@ -10,6 +10,17 @@ echo "  数智安行 | 数据可信治理平台"
 echo "  启动开发环境..."
 echo "========================================="
 
+# 检查端口占用
+echo "[0/4] 检查端口占用..."
+if lsof -i :8000 2>/dev/null | grep LISTEN; then
+  echo "警告: 端口 8000 已被占用，请先释放该端口"
+  exit 1
+fi
+if lsof -i :3000 2>/dev/null | grep LISTEN; then
+  echo "警告: 端口 3000 已被占用，请先释放该端口"
+  exit 1
+fi
+
 # 检查并安装后端依赖
 echo "[1/4] 安装后端依赖..."
 cd "$BACKEND_DIR"
@@ -48,12 +59,18 @@ if [ ! -d "node_modules" ]; then
   npm install
 fi
 
+# 获取局域网 IP
+LAN_IP=$(ip route get 1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1); exit}' || hostname -I 2>/dev/null | awk '{print $1}' || echo "")
+
 # 启动服务
 echo "[4/4] 启动服务..."
 echo ""
-echo "后端 API 地址: http://localhost:8000"
-echo "前端地址:      http://localhost:3000"
-echo "API 文档:      http://localhost:8000/docs"
+echo "本机前端: http://127.0.0.1:3000"
+echo "本机后端: http://127.0.0.1:8000"
+echo "后端文档: http://127.0.0.1:8000/docs"
+if [ -n "$LAN_IP" ]; then
+  echo "局域网前端: http://${LAN_IP}:3000"
+fi
 echo ""
 echo "按 Ctrl+C 停止所有服务"
 echo ""
