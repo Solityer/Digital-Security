@@ -1,38 +1,38 @@
-Smoke API started at 2026-04-26T19:03:16+08:00
+Smoke API started at 2026-04-27T10:28:14+08:00
 [PASS] 健康检查 | GET http://127.0.0.1:8000/health
 {"status":"ok","service":"数智安行 API","version":"1.0.0","modules":{"database":"operational","graph_sdp":"operational","gcc_sdp":"operational","gs_ldp":"operational","ndkd":"operational","vpcs":"operational","zkgcn"
 [PASS] 资产列表 | GET http://127.0.0.1:8000/api/assets
-{"total":10,"items":[{"id":10,"asset_id":10,"name":"测试金融图谱_API","industry":"finance","description":"API测试用金融图谱资产","asset_hash":"fe4ac21073979929a5ea3536e18d759e823dad95b1fe461164727f96dcb93c
+{"total":6,"items":[{"id":6,"asset_id":6,"name":"通用社交关系网络","industry":"social","description":"基于公开关系样本抽象出的社交互动网络，可用于匿名化、差分隐私与图推理算法�
 [PASS] 合约列表 | GET http://127.0.0.1:8000/api/contracts
-{"total":9,"items":[{"id":9,"contract_id":9,"title":"API测试合约","provider_id":1,"consumer_id":4,"provider":"admin","consumer":"demo","purpose":"API smoke test","valid_from":null,"valid_until":null,"accessible_field
+{"total":6,"items":[{"id":6,"contract_id":6,"title":"社交关系网络研究访问协议","provider_id":2,"consumer_id":4,"provider":"analyst（数据分析师）","consumer":"demo（演示账号）","purpose":"支持�
 [PASS] 审计日志 | GET http://127.0.0.1:8000/api/audit/logs?limit=5
-{"total":37,"items":[{"id":37,"log_id":37,"timestamp":"2026-04-26T11:03:16.926589","user_id":null,"username":"system","role":"admin","action":"generate_graph_snapshot","target_type":"asset","target_id":"10","result":"suc
+{"total":32,"items":[{"id":32,"log_id":32,"timestamp":"2026-04-27T02:28:14.142793","user_id":null,"username":"system","role":"admin","action":"generate_graph_snapshot","target_type":"asset","target_id":"6","result":"succ
 [PASS] 审计链校验 | POST http://127.0.0.1:8000/api/audit/verify-chain
-{"is_valid":false,"total_records":37,"valid_count":0,"invalid_count":37,"tampered_ids":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37],"chain_intact":false,"verifie
+{"is_valid":true,"total_records":32,"valid_count":32,"invalid_count":0,"tampered_ids":[],"chain_intact":true,"verified_at":"2026-04-27T02:28:14.253935"}
 [PASS] 风险列表 | GET http://127.0.0.1:8000/api/risks
-{"total":5,"items":[{"id":5,"risk_id":5,"event_type":"data_quality","severity":"low","asset_id":null,"user_id":1,"description":"社交网络图谱快照检测到 3 个孤立节点（度数为0），可能影响隐私算�
+{"total":10,"items":[{"id":10,"risk_id":10,"event_type":"verify_failure","severity":"critical","asset_id":6,"user_id":1,"asset_name":"通用社交关系网络","username":"admin","description":"证明验证失败：零�
 [PASS] 风险评估 | POST http://127.0.0.1:8000/api/risks/evaluate
 {"risk_score":100.0,"risk_events":[{"event_type":"unauthorized_access","severity":"critical","score":70.0,"description":"未授权访问：授权凭证缺失或已过期，访问请求被拒绝。"},{"event_type":"budget
 [PASS] 风险报告 | POST http://127.0.0.1:8000/api/risks/report
-{"count_by_severity":{"critical":3,"high":3,"low":1,"medium":1},"count_by_type":{"anomaly_access":1,"budget_exceeded":2,"data_quality":1,"unauthorized_access":2,"verify_failure":2},"top_assets":[{"asset_id":10,"event_cou
+{"count_by_severity":{"critical":5,"high":4,"low":2,"medium":2},"count_by_type":{"anomaly_access":2,"budget_exceeded":3,"data_quality":1,"expired_access":1,"unauthorized_access":3,"verify_failure":3},"top_assets":[{"asse
 [PASS] Graph-SDP | POST http://127.0.0.1:8000/api/privacy/graph-sdp
-{"id":1,"asset_id":10,"algorithm":"graph_sdp","params":{"epsilon":1.0,"delta":1e-05,"noise_mechanism":"gaussian","L":10},"input_summary":{"node_count":50,"edge_count":63,"max_degree":7,"unique_degrees":8},"result":{"true
+{"id":5,"asset_id":6,"algorithm":"graph_sdp","params":{"epsilon":1.0,"delta":1e-05,"noise_mechanism":"gaussian","L":10},"input_summary":{"node_count":60,"edge_count":224,"max_degree":35,"unique_degrees":16},"result":{"tr
 [PASS] GCC-SDP | POST http://127.0.0.1:8000/api/privacy/gcc-sdp
-{"id":2,"asset_id":10,"algorithm":"gcc_sdp","params":{"epsilon":1.0,"delta":1e-05,"cluster_size":5},"input_summary":{"node_count":50,"edge_count":63},"result":{"true_global_cc":0.079238,"true_global_cc_triad_formula":0.0
+{"id":6,"asset_id":6,"algorithm":"gcc_sdp","params":{"epsilon":1.0,"delta":1e-05,"cluster_size":5},"input_summary":{"node_count":60,"edge_count":224},"result":{"true_global_cc":0.275845,"true_global_cc_triad_formula":0.1
 [PASS] GS-LDP | POST http://127.0.0.1:8000/api/privacy/gs-ldp
-{"id":3,"asset_id":10,"algorithm":"gs_ldp","params":{"epsilon":2.0,"randomize_edges":true,"randomize_attributes":true,"edge_flip_prob":0.2,"attr_noise_scale":0.2},"input_summary":{"node_count":50,"edge_count":63,"epsilon
+{"id":7,"asset_id":6,"algorithm":"gs_ldp","params":{"epsilon":2.0,"randomize_edges":true,"randomize_attributes":true,"edge_flip_prob":0.2,"attr_noise_scale":0.2},"input_summary":{"node_count":60,"edge_count":224,"epsilon
 [PASS] NDKD | POST http://127.0.0.1:8000/api/privacy/ndkd
-{"id":4,"asset_id":10,"algorithm":"ndkd","params":{"k":3,"epsilon":1.0,"degree_threshold":3,"suppress_outliers":true},"input_summary":{"node_count":50,"edge_count":63,"k":3,"epsilon":1.0},"result":{"original_stats":{"nod
+{"id":8,"asset_id":6,"algorithm":"ndkd","params":{"k":3,"epsilon":1.0,"degree_threshold":3,"suppress_outliers":true},"input_summary":{"node_count":60,"edge_count":224,"k":3,"epsilon":1.0},"result":{"original_stats":{"nod
 [PASS] VPCS 查询 | POST http://127.0.0.1:8000/api/vpcs/query
-{"id":1,"asset_id":10,"source_node":"0","target_node":"49","cost_threshold":50.0,"time_threshold":50.0,"distance_constraint":50.0,"budget":50.0,"encrypted_graph_summary":{"edge_count":78,"node_count":50,"master_hash":"79
+{"id":2,"asset_id":6,"source_node":"0","target_node":"59","cost_threshold":50.0,"time_threshold":50.0,"distance_constraint":50.0,"budget":50.0,"encrypted_graph_summary":{"edge_count":280,"node_count":60,"master_hash":"ad
 [PASS] VPCS 篡改演示 | POST http://127.0.0.1:8000/api/vpcs/tamper-demo
-{"id":2,"asset_id":10,"source_node":"0","target_node":"49","cost_threshold":50.0,"time_threshold":50.0,"distance_constraint":50.0,"budget":50.0,"encrypted_graph_summary":{"edge_count":78,"node_count":50,"master_hash":"79
+{"id":3,"asset_id":6,"source_node":"0","target_node":"59","cost_threshold":50.0,"time_threshold":50.0,"distance_constraint":50.0,"budget":50.0,"encrypted_graph_summary":{"edge_count":280,"node_count":60,"master_hash":"ad
 [PASS] zkGCN 推理 | POST http://127.0.0.1:8000/api/zkgcn/infer
-{"id":1,"asset_id":10,"model_type":"gcn","input_nodes":["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34"
+{"id":1,"asset_id":6,"model_type":"gcn","input_nodes":["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34",
 [PASS] zkGCN 篡改演示 | POST http://127.0.0.1:8000/api/zkgcn/tamper-demo
-{"id":2,"asset_id":10,"model_type":"gcn","input_nodes":["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34"
+{"id":2,"asset_id":6,"model_type":"gcn","input_nodes":["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34",
 [PASS] 场景列表 | GET http://127.0.0.1:8000/api/demo/scenarios
-{"total":3,"items":[{"id":"finance","key":"finance","scenario_key":"finance","scenario_id":"finance","name":"金融数据安全共享","title":"金融数据安全共享","description":"模拟金融机构之间的数据�
+{"total":3,"items":[{"id":"finance","key":"finance","scenario_key":"finance","scenario_id":"finance","name":"金融联合风控","title":"金融联合风控","description":"围绕跨机构风控联防需求，平台在�
 [PASS] 金融场景运行 | POST http://127.0.0.1:8000/api/demo/run/finance
-{"scenario":"finance","status":"success","title":"金融数据安全共享","steps_completed":3,"results":{"vpcs":{"source":"0","target":"10","path":["0","30","15","25","3","23","43","28","10"],"distance":26.452,"cost":3
+{"scenario":"finance","status":"success","title":"金融联合风控","steps_completed":3,"results":{"vpcs":{"source":"0","target":"10","path":["0","30","15","25","3","23","43","28","10"],"distance":26.452,"cost":3677.96
 Smoke API completed. Total passed: 18

@@ -42,6 +42,11 @@ def _compute_log_hash(
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
+def _normalize_result_value(result: Any) -> str:
+    value = getattr(result, "value", result)
+    return str(value)
+
+
 # ---------------------------------------------------------------------------
 # Public service functions
 # ---------------------------------------------------------------------------
@@ -77,8 +82,9 @@ async def create_audit_log(
     # 2. Compute new log hash
     now = datetime.utcnow()
     now_str = now.isoformat()
+    result_str = _normalize_result_value(result)
     log_hash = _compute_log_hash(
-        now_str, username, action, target_type, target_id, result, prev_hash
+        now_str, username, action, target_type, target_id, result_str, prev_hash
     )
 
     # 3. Persist
@@ -89,7 +95,7 @@ async def create_audit_log(
         action=action,
         target_type=target_type,
         target_id=str(target_id),
-        result=result,
+        result=result_str,
         detail=detail,
         log_hash=log_hash,
         prev_hash=prev_hash,
@@ -177,7 +183,7 @@ async def verify_audit_chain(db: AsyncSession) -> dict[str, Any]:
             log.action,
             log.target_type,
             log.target_id,
-            log.result if isinstance(log.result, str) else log.result.value,
+            _normalize_result_value(log.result),
             running_prev_hash,
         )
         if log.log_hash != expected_hash:

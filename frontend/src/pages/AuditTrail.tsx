@@ -96,6 +96,7 @@ export default function AuditTrail() {
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [selectedLogId, setSelectedLogId] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -108,10 +109,17 @@ export default function AuditTrail() {
       if (filterDateFrom) params.date_from = filterDateFrom
       if (filterDateTo)   params.date_to = filterDateTo
       const data = await getAuditLogs(params)
-      setLogs(toArray(data, ['items', 'logs']))
+      const items = toArray<AuditLog>(data, ['items', 'logs'])
+      setLogs(items)
+      setSelectedLogId((current) => {
+        if (items.length === 0) return ''
+        const hasCurrent = items.some((item) => String(getId(item)) === current)
+        return hasCurrent ? current : String(getId(items[0]) ?? '')
+      })
     } catch (err: unknown) {
       setLoadError(err instanceof Error ? err.message : '审计日志加载失败')
       setLogs([])
+      setSelectedLogId('')
     }
     finally { setLoading(false) }
   }, [filterUsername, filterAction, filterResult, filterDateFrom, filterDateTo])
@@ -123,7 +131,10 @@ export default function AuditTrail() {
     setChainResult(null)
     try {
       const data = await verifyAuditChain()
-      setChainResult(toObject<ChainVerifyResult>(data, {} as ChainVerifyResult))
+      const result = toObject<ChainVerifyResult>(data, {} as ChainVerifyResult)
+      setChainResult(result)
+      const firstTampered = toArray<number>(result.tampered_ids)[0]
+      if (firstTampered != null) setSelectedLogId(String(firstTampered))
     } catch {}
     finally { setVerifyLoading(false) }
   }
@@ -141,8 +152,10 @@ export default function AuditTrail() {
       await tamperAuditDemo(logId)
       await load()
       // Re-verify after tamper
-      const result = await verifyAuditChain()
+      const result = toObject<ChainVerifyResult>(await verifyAuditChain(), {} as ChainVerifyResult)
       setChainResult(result)
+      const firstTampered = toArray<number>(result.tampered_ids)[0]
+      if (firstTampered != null) setSelectedLogId(String(firstTampered))
     } catch (e: unknown) {
       setTamperError(e instanceof Error ? e.message : '篡改演示失败')
     }
@@ -161,6 +174,9 @@ export default function AuditTrail() {
     }
   })
   const chainOk = chainResult?.chain_intact ?? chainResult?.is_valid
+  const selectedLog = displayLogs.find((log) => String(getId(log)) === selectedLogId) ?? displayLogs[0]
+  const anomalyLogs = displayLogs.filter((log) => log.chain_valid === false)
+  const uniqueUsers = new Set(displayLogs.map((log) => safeString(log.username, '匿名用户'))).size
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -253,6 +269,20 @@ export default function AuditTrail() {
 
         {tamperError && <p className="alert-error mb-3">{tamperError}</p>}
 
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          {[
+            { label: '日志总数', value: displayLogs.length, color: '#3b82f6' },
+            { label: '异常区块', value: anomalyLogs.length, color: '#ef4444' },
+            { label: '独立用户', value: uniqueUsers, color: '#22c55e' },
+            { label: '最新校验', value: chainResult?.verified_at ? dayjs(chainResult.verified_at).format('HH:mm:ss') : '未执行', color: '#a78bfa' },
+          ].map((item) => (
+            <div key={item.label} className="rounded-lg p-3" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
+              <p className="text-lg font-black font-mono" style={{ color: item.color }}>{item.value}</p>
+              <p className="text-xs text-slate-500 mt-1">{item.label}</p>
+            </div>
+          ))}
+        </div>
+
         {/* Chain blocks visualization */}
         {displayLogs.length > 0 && (
           <div className="mb-4">
@@ -280,10 +310,20 @@ export default function AuditTrail() {
                   <XCircle className="w-5 h-5" /> 哈希链验证失败 — 检测到篡改！
                 </p>
                 {tamperedSet.size > 0 && (
-                  <p className="text-sm mt-1 opacity-80">
-                    检测到 {chainResult.invalid_count ?? tamperedSet.size} 条异常日志，
-                    首个异常日志 ID：{String(Array.from(tamperedSet)[0] ?? '-')}
-                  </p>
+                  <div className="text-sm mt-2 opacity-90 space-y-2">
+                    <p>
+                      检测到 {chainResult.invalid_count ?? tamperedSet.size} 条异常日志，
+                      首个异常日志 ID：{String(Array.from(tamperedSet)[0] ?? '-')}
+                    </p>
+                    <p>下方日志表中红色高亮项为疑似断链位置，右侧明细面板可继续查看当前区块的 prev_hash 与 log_hash。</p>
+                    <div className="flex flex-wrap gap-2">
+                      {Array.from(tamperedSet).map((id) => (
+                        <button key={id} className="badge badge-red text-xs" onClick={() => setSelectedLogId(String(id))}>
+                          异常日志 #{id}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -292,73 +332,137 @@ export default function AuditTrail() {
       </div>
 
       {/* Audit log table */}
-      <div className="card-glow p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="section-header mb-0">
-            审计日志
-            <span className="ml-2 text-slate-500 text-sm font-normal">({displayLogs.length} 条)</span>
-          </h2>
+      <div className="grid grid-cols-1 xl:grid-cols-[1.7fr_1fr] gap-6">
+        <div className="card-glow p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-header mb-0">
+              审计日志
+              <span className="ml-2 text-slate-500 text-sm font-normal">({displayLogs.length} 条)</span>
+            </h2>
+          </div>
+
+          {loading ? (
+            <LoadingSpinner message="加载审计日志..." className="py-10" />
+          ) : displayLogs.length === 0 ? (
+            <div className="text-center py-10">
+              <ScrollText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-500">暂无审计日志</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>时间戳</th>
+                    <th>用户</th>
+                    <th>角色</th>
+                    <th>操作</th>
+                    <th>目标</th>
+                    <th>结果</th>
+                    <th>链状态</th>
+                    <th>日志哈希</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayLogs.map((log, idx) => {
+                    const result = safeString(log.result, 'unknown')
+                    const r = RESULT_MAP[result] ?? { label: result, cls: 'badge-gray' }
+                    const isTampered = log.chain_valid === false || log.result === 'tampered'
+                    const isSelected = String(getId(log)) === String(getId(selectedLog))
+                    return (
+                      <tr
+                        key={getId(log) || `log-${idx}`}
+                        className={`${isTampered ? 'bg-red-950/20' : ''} ${isSelected ? 'ring-1 ring-cyan-500/50' : ''} cursor-pointer`}
+                        onClick={() => setSelectedLogId(String(getId(log) ?? ''))}
+                      >
+                        <td className="text-slate-500 text-xs">{idx + 1}</td>
+                        <td className="font-mono text-xs text-slate-400">
+                          {getTimestamp(log) ? dayjs(getTimestamp(log)).format('MM-DD HH:mm:ss') : '-'}
+                        </td>
+                        <td className="font-semibold text-slate-200">{safeString(log.username, '-')}</td>
+                        <td className="text-xs text-slate-400">{safeString(log.role, '-')}</td>
+                        <td className="text-slate-300 text-sm">{safeString(log.action, '-')}</td>
+                        <td className="text-slate-400 text-xs truncate max-w-32">
+                          {safeString(log.target, `${safeString(log.target_type)}:${safeString(log.target_id)}`) || '-'}
+                        </td>
+                        <td>
+                          <span className={`badge ${r.cls}`}>{r.label}</span>
+                          {isTampered ? <AlertTriangle className="w-3.5 h-3.5 text-red-400 inline ml-1.5" /> : null}
+                        </td>
+                        <td>
+                          <span className={`badge ${isTampered ? 'badge-red' : 'badge-green'}`}>{isTampered ? '断链' : '完整'}</span>
+                        </td>
+                        <td>
+                          {log.log_hash ? (
+                            <span className="hash-display text-xs" title={log.log_hash}>
+                              {log.log_hash.slice(0, 12)}...
+                            </span>
+                          ) : '-'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {loading ? (
-          <LoadingSpinner message="加载审计日志..." className="py-10" />
-        ) : displayLogs.length === 0 ? (
-          <div className="text-center py-10">
-            <ScrollText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-500">暂无审计日志</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>时间戳</th>
-                  <th>用户</th>
-                  <th>角色</th>
-                  <th>操作</th>
-                  <th>目标</th>
-                  <th>结果</th>
-                  <th>日志哈希</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayLogs.map((log, idx) => {
-                  const result = safeString(log.result, 'unknown')
-                  const r = RESULT_MAP[result] ?? { label: result, cls: 'badge-gray' }
-                  const isTampered = log.chain_valid === false || log.result === 'tampered'
-                  return (
-                    <tr key={getId(log) || `log-${idx}`} className={isTampered ? 'bg-red-950/20' : ''}>
-                      <td className="text-slate-500 text-xs">{idx + 1}</td>
-                      <td className="font-mono text-xs text-slate-400">
-                        {getTimestamp(log) ? dayjs(getTimestamp(log)).format('MM-DD HH:mm:ss') : '-'}
-                      </td>
-                      <td className="font-semibold text-slate-200">{safeString(log.username, '-')}</td>
-                      <td className="text-xs text-slate-400">{safeString(log.role, '-')}</td>
-                      <td className="text-slate-300 text-sm">{safeString(log.action, '-')}</td>
-                      <td className="text-slate-400 text-xs truncate max-w-32">
-                        {safeString(log.target, `${safeString(log.target_type)}:${safeString(log.target_id)}`) || '-'}
-                      </td>
-                      <td>
-                        <span className={`badge ${r.cls}`}>{r.label}</span>
-                        {isTampered && (
-                          <AlertTriangle className="w-3.5 h-3.5 text-red-400 inline ml-1.5" />
-                        )}
-                      </td>
-                      <td>
-                        {log.log_hash ? (
-                          <span className="hash-display text-xs" title={log.log_hash}>
-                            {log.log_hash.slice(0, 12)}...
-                          </span>
-                        ) : '-'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="card-glow p-5">
+          <h2 className="section-header">日志明细</h2>
+          {!selectedLog ? (
+            <div className="text-sm text-slate-500 py-10 text-center">请选择左侧一条日志查看结构化明细</div>
+          ) : (
+            <div className="space-y-4">
+              <div className={selectedLog.chain_valid === false ? 'alert-error' : 'alert-info'}>
+                <p className="text-sm">
+                  {selectedLog.chain_valid === false
+                    ? '当前日志位于异常链路中，建议对比前序哈希与当前哈希是否连续。'
+                    : '当前日志链路完整，可用于答辩时演示不可篡改审计证据。'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  ['日志 ID', safeString(getId(selectedLog), '-')],
+                  ['用户', safeString(selectedLog.username, '-')],
+                  ['角色', safeString(selectedLog.role, '-')],
+                  ['操作', safeString(selectedLog.action, '-')],
+                  ['结果', safeString(selectedLog.result, '-')],
+                  ['时间', getTimestamp(selectedLog) ? dayjs(getTimestamp(selectedLog)).format('YYYY-MM-DD HH:mm:ss') : '-'],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-lg p-3" style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid #1e293b' }}>
+                    <p className="text-xs text-slate-500 mb-1">{label}</p>
+                    <p className="text-sm text-slate-200 break-all">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-lg p-3" style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid #1e293b' }}>
+                <p className="text-xs text-slate-500 mb-1">访问目标</p>
+                <p className="text-sm text-slate-200 break-all">{safeString(selectedLog.target, `${safeString(selectedLog.target_type)}:${safeString(selectedLog.target_id)}`) || '-'}</p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-lg p-3" style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid #1e293b' }}>
+                  <p className="text-xs text-slate-500 mb-1">Prev Hash</p>
+                  <p className="hash-display text-xs break-all">{safeString(selectedLog.prev_hash, '无前序哈希（链首记录）')}</p>
+                </div>
+                <div className="rounded-lg p-3" style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid #1e293b' }}>
+                  <p className="text-xs text-slate-500 mb-1">Log Hash</p>
+                  <p className="hash-display text-xs break-all">{safeString(selectedLog.log_hash, '-')}</p>
+                </div>
+              </div>
+
+              {selectedLog.chain_valid === false ? (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+                  当前区块已被定位为异常区块。可先展示上方区块链示意，再切换到本明细面板解释 prev_hash 断裂位置。
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
@@ -370,7 +474,7 @@ export default function AuditTrail() {
               { label: '总日志数', value: displayLogs.length, color: '#3b82f6' },
               { label: '成功操作', value: displayLogs.filter(l => ['success', 'allow'].includes(safeString(l.result))).length, color: '#10b981' },
               { label: '拒绝/失败', value: displayLogs.filter(l => ['deny', 'error', 'failure'].includes(safeString(l.result))).length, color: '#ef4444' },
-              { label: '独立用户', value: new Set(displayLogs.map(l => safeString(l.username, '匿名用户'))).size, color: '#a78bfa' },
+              { label: '独立用户', value: uniqueUsers, color: '#a78bfa' },
             ].map(m => (
               <div key={m.label} className="text-center rounded-lg p-3" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
                 <p className="text-2xl font-black font-mono" style={{ color: m.color }}>{m.value}</p>

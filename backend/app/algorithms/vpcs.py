@@ -16,6 +16,7 @@ revealing the graph.
 from __future__ import annotations
 
 import hashlib
+import heapq
 import json
 import math
 import random
@@ -120,53 +121,76 @@ def _find_constrained_shortest_path(
     if source not in G or target not in G:
         return None
 
-    # Use weight as the primary distance metric
-    try:
-        all_simple = list(
-            nx.shortest_simple_paths(G, source, target, weight="weight")
-        )
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    max_expansions = max(2000, G.number_of_nodes() * 80)
+    frontier: list[tuple[float, float, float, int, Any, list[Any]]] = [
+        (0.0, 0.0, 0.0, 0, source, [source])
+    ]
+    best_states: dict[Any, list[tuple[float, float, float, int]]] = {source: [(0.0, 0.0, 0.0, 0)]}
+    expansions = 0
 
-    for path in all_simple[:200]:  # cap to avoid explosion
-        # Aggregate edge weights along path
-        total_cost = 0.0
-        total_time = 0.0
-        total_weight = 0.0
+    def _is_dominated(
+        candidates: list[tuple[float, float, float, int]],
+        weight_val: float,
+        cost_val: float,
+        time_val: float,
+        hop_val: int,
+    ) -> bool:
+        for seen_weight, seen_cost, seen_time, seen_hops in candidates:
+            if (
+                seen_weight <= weight_val
+                and seen_cost <= cost_val
+                and seen_time <= time_val
+                and seen_hops <= hop_val
+            ):
+                return True
+        return False
 
-        valid = True
-        for i in range(len(path) - 1):
-            u, v = path[i], path[i + 1]
-            data = G[u][v]
-            cost_val = float(data.get("cost", 0))
-            time_val = float(data.get("time", 0))
-            weight_val = float(data.get("weight", 1))
+    while frontier and expansions < max_expansions:
+        total_weight, total_cost, total_time, hop_count, node, path = heapq.heappop(frontier)
+        expansions += 1
 
-            # Skip dummy edges
-            if data.get("label") == "dummy":
-                valid = False
-                break
+        if node == target:
+            return path, total_weight, total_cost, total_time
 
-            total_cost += cost_val
-            total_time += time_val
-            total_weight += weight_val
+        for neighbor, edge_data in G[node].items():
+            if neighbor in path:
+                continue
+            if edge_data.get("label") == "dummy":
+                continue
 
-        if not valid:
-            continue
+            next_weight = total_weight + float(edge_data.get("weight", 1))
+            next_cost = total_cost + float(edge_data.get("cost", 0))
+            next_time = total_time + float(edge_data.get("time", 0))
+            next_hops = hop_count + 1
 
-        hop_count = len(path) - 1
+            if cost_threshold > 0 and next_cost > cost_threshold:
+                continue
+            if time_threshold > 0 and next_time > time_threshold:
+                continue
+            if distance_constraint > 0 and next_hops > distance_constraint:
+                continue
+            if budget > 0 and next_weight > budget:
+                continue
 
-        # Check constraints (0 = unconstrained)
-        if cost_threshold > 0 and total_cost > cost_threshold:
-            continue
-        if time_threshold > 0 and total_time > time_threshold:
-            continue
-        if distance_constraint > 0 and hop_count > distance_constraint:
-            continue
-        if budget > 0 and total_weight > budget:
-            continue
+            states = best_states.setdefault(neighbor, [])
+            if _is_dominated(states, next_weight, next_cost, next_time, next_hops):
+                continue
 
-        return path, total_weight, total_cost, total_time
+            best_states[neighbor] = [
+                (seen_weight, seen_cost, seen_time, seen_hops)
+                for seen_weight, seen_cost, seen_time, seen_hops in states
+                if not (
+                    next_weight <= seen_weight
+                    and next_cost <= seen_cost
+                    and next_time <= seen_time
+                    and next_hops <= seen_hops
+                )
+            ]
+            best_states[neighbor].append((next_weight, next_cost, next_time, next_hops))
+            heapq.heappush(
+                frontier,
+                (next_weight, next_cost, next_time, next_hops, neighbor, path + [neighbor]),
+            )
 
     return None
 

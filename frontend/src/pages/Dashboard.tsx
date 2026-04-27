@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ReactECharts from 'echarts-for-react'
 import {
-  Database, FileText, Cpu, CheckCircle2, AlertTriangle, Activity,
+  Database, FileText, Cpu, CheckCircle2, AlertTriangle,
   BarChart3, Shield, GitBranch, Zap, RefreshCw, Brain, Layers,
 } from 'lucide-react'
 import StatCard from '../components/StatCard'
