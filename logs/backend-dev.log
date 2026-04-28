@@ -2,48 +2,100 @@
 
 You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
   warnings.warn(
-INFO:     Started server process [241022]
+INFO:     Started server process [366350]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:39830 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56548 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56614 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56602 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56588 - "GET /api/contracts HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56572 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56560 - "GET /api/risks HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56624 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56634 - "GET /api/contracts HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56650 - "GET /api/risks HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56662 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56666 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56670 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52998 - "GET /api/contracts HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53004 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53008 - "GET /api/contracts HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53020 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53026 - "POST /api/contracts/3/activate HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53034 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53042 - "GET /api/contracts HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53046 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53062 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43042 - "POST /api/privacy/ndkd HTTP/1.1" 201 Created
-INFO:     127.0.0.1:47926 - "POST /api/privacy/ndkd HTTP/1.1" 201 Created
-INFO:     127.0.0.1:47934 - "POST /api/privacy/ndkd HTTP/1.1" 201 Created
-INFO:     127.0.0.1:33088 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33072 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33118 - "GET /api/demo/scenarios HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33090 - "GET /api/audit/logs?limit=5 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33116 - "GET /api/contracts HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33102 - "GET /api/risks HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33130 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33144 - "GET /api/audit/logs?limit=5 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33156 - "GET /api/assets HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33162 - "GET /api/risks HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33164 - "GET /api/demo/scenarios HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33178 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33816 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52016 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51994 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52008 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52020 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52026 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52036 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52038 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52040 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52042 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46692 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46704 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46712 - "GET /api/assets/4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57498 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57508 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57516 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57530 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33438 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33444 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37690 - "POST /api/privacy/ndkd HTTP/1.1" 201 Created
+INFO:     127.0.0.1:34296 - "POST /api/privacy/ndkd HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54632 - "POST /api/privacy/ndkd HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54640 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54642 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54650 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54660 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60100 - "POST /api/zkgcn/infer HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56918 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56920 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56928 - "GET /api/audit/logs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56936 - "GET /api/audit/logs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45726 - "GET /api/demo/scenarios HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45738 - "GET /api/demo/scenarios HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54224 - "POST /api/demo/run/medical HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54234 - "POST /api/demo/run/medical HTTP/1.1" 201 Created
+INFO:     127.0.0.1:57968 - "POST /api/demo/run/medical HTTP/1.1" 201 Created
+INFO:     127.0.0.1:57970 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57976 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57992 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57996 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57998 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58014 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58020 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58026 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58030 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58044 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58054 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58056 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58068 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58080 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57030 - "GET /api/assets/3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34164 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34172 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34184 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34190 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34192 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34194 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34204 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34216 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34222 - "GET /api/audit/logs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34230 - "GET /api/audit/logs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34248 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:34248 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:34244 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:34260 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49012 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49028 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49068 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49044 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49050 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49054 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49080 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49086 - "GET /api/audit/logs?limit=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49118 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49102 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49122 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49170 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49126 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49142 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49158 - "GET /api/audit/logs?limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49160 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56322 - "GET /api/demo/scenarios HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56324 - "GET /api/demo/scenarios HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56328 - "GET /api/audit/logs?limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56334 - "GET /api/contracts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56344 - "GET /api/assets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56338 - "GET /api/risks HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49010 - "GET /docs HTTP/1.1" 200 OK
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [241022]
+INFO:     Finished server process [366350]
