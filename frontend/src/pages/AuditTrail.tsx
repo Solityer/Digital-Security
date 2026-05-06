@@ -157,7 +157,7 @@ export default function AuditTrail() {
       const firstTampered = toArray<number>(result.tampered_ids)[0]
       if (firstTampered != null) setSelectedLogId(String(firstTampered))
     } catch (e: unknown) {
-      setTamperError(e instanceof Error ? e.message : '篡改演示失败')
+      setTamperError(e instanceof Error ? e.message : '异常日志校验失败')
     }
     finally { setTamperLoading(false) }
   }
@@ -198,7 +198,7 @@ export default function AuditTrail() {
           </button>
           <button onClick={handleTamper} disabled={tamperLoading || logs.length === 0} className="btn btn-danger gap-2">
             {tamperLoading ? <LoadingSpinner size="sm" /> : <AlertTriangle className="w-4 h-4" />}
-            {tamperLoading ? '演示中...' : '篡改演示'}
+            {tamperLoading ? '校验中...' : '异常日志校验'}
           </button>
         </div>
       </div>
@@ -419,7 +419,7 @@ export default function AuditTrail() {
                 <p className="text-sm">
                   {selectedLog.chain_valid === false
                     ? '当前日志位于异常链路中，建议对比前序哈希与当前哈希是否连续。'
-                    : '当前日志链路完整，可用于答辩时演示不可篡改审计证据。'}
+                    : '当前日志链路完整，可作为不可篡改审计证据进行复核。'}
                 </p>
               </div>
 

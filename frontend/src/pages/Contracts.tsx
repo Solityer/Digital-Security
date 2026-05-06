@@ -12,14 +12,14 @@ const PARTY_OPTIONS = [
   { id: '1', label: 'admin（平台管理员）' },
   { id: '2', label: 'analyst（数据分析师）' },
   { id: '3', label: 'auditor（审计专员）' },
-  { id: '4', label: 'demo（演示账号）' },
+  { id: '4', label: 'observer（业务观察员）' },
 ]
 
 const ROLE_OPTIONS = [
   { label: '平台管理员', value: 'admin' },
   { label: '数据分析师', value: 'analyst' },
   { label: '审计专员', value: 'auditor' },
-  { label: '演示账号', value: 'demo' },
+  { label: '业务观察员', value: 'demo' },
 ]
 
 const OPERATION_OPTIONS = [

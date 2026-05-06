@@ -251,7 +251,7 @@ export default function Dashboard() {
           <div>
             <h2 className="section-header">平台简介</h2>
             <p className="text-slate-300 leading-7 text-sm">
-              数图信枢面向图数据可信治理与智能流通场景，整合数据资产登记、共享合约、隐私计算、可验证查询、可验证推理、风险监控与审计追踪能力，形成可直接用于答辩讲解的端到端闭环平台。
+              数智安行面向企业级图数据可信治理与智能流通场景，整合数据资产登记、共享合约、隐私计算、可验证查询、可验证推理、风险监控与审计追踪能力，形成覆盖登记、授权、执行、监控与审计的端到端业务闭环。
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
               {[
@@ -277,7 +277,7 @@ export default function Dashboard() {
               <button className="btn btn-secondary gap-2 justify-center" onClick={() => navigate('/privacy')}><Cpu className="w-4 h-4" /> 运行 Graph-SDP</button>
               <button className="btn btn-secondary gap-2 justify-center" onClick={() => navigate('/vpcs')}><Zap className="w-4 h-4" /> 执行 VPCS 查询</button>
               <button className="btn btn-secondary gap-2 justify-center" onClick={() => navigate('/zkgcn')}><Brain className="w-4 h-4" /> 执行 zkGCN 推理</button>
-              <button className="btn btn-success gap-2 justify-center" onClick={() => navigate('/scenarios')}><BarChart3 className="w-4 h-4" /> 进入场景演示</button>
+              <button className="btn btn-success gap-2 justify-center" onClick={() => navigate('/scenarios')}><BarChart3 className="w-4 h-4" /> 进入解决方案中心</button>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-# 数智安行系统架构文档
+# 数智安行｜图数据可信治理与智能流通平台架构文档
 
 版本：1.0.0 | 日期：2026-04-26
 
@@ -22,12 +22,12 @@
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────┘ │
 │  ┌─────────────┐                                                          │
 │  │ScenarioDemo │                                                          │
-│  │行业场景演示  │                                                          │
+│  │行业解决方案  │                                                          │
 │  └─────────────┘                                                          │
 └──────────────────────────────────┬───────────────────────────────────────┘
                                    │
                           HTTP / REST / JSON
-                          (CORS: allow-all for demo)
+                          (CORS: allow-all for local verification)
                                    │
 ┌──────────────────────────────────▼───────────────────────────────────────┐
 │                       服务端层（FastAPI · port 8000）                      │
@@ -74,10 +74,10 @@
 | 授权策略 | RBAC + ABAC 双模授权，细粒度操作权限绑定 | `api/authz.py` | 角色枚举, 属性键值策略 |
 | 隐私计算实验室 | 四大图差分隐私算法在线执行，参数可调，结果可视化 | `api/privacy.py`, `algorithms/graph_sdp.py` 等 | NumPy, k-RR, Laplace, SUC |
 | VPCS 加密路径查询 | 加密图四角色协议，约束最短路径查询，HMAC 可验证 | `api/vpcs.py`, `algorithms/vpcs.py` | HMAC-SHA256, Dijkstra, 哑边 |
-| zkGCN 可验证推理 | GCN 推理 + R1CS 约束 + Groth16 风格证明生成与验证 | `api/zkgcn.py`, `algorithms/zkgcn.py` | fixed-point 量化, 矩阵乘法, SHA256 |
-| 审计追踪 | 哈希链式不可篡改日志，支持完整性校验与篡改演示 | `api/audit.py`, `services/audit_service.py` | 哈希链, prev_hash 链接 |
+| zkGCN 可验证推理 | GCN 推理 + 分层见证哈希链 + 工程化证明摘要校验 | `api/zkgcn.py`, `algorithms/zkgcn.py` | 矩阵乘法, ReLU/Softmax, SHA256 哈希承诺 |
+| 审计追踪 | 哈希链式不可篡改日志，支持完整性校验与异常日志校验 | `api/audit.py`, `services/audit_service.py` | 哈希链, prev_hash 链接 |
 | 风险监控 | 六类风险事件检测，风险评分，状态流转管理 | `api/risks.py`, `services/risk_service.py` | 枚举策略, 评分模型 |
-| 行业场景演示 | 金融/医疗/政务三大场景一键演示，分步骤动画输出 | `api/demo.py`, `pages/ScenarioDemo.tsx` | 预置步骤配置, async 调度 |
+| 行业解决方案 | 金融/医疗/政务三大场景流程编排，分步骤输出结果 | `api/demo.py`, `pages/ScenarioDemo.tsx` | 预置步骤配置, async 调度 |
 
 ---
 
@@ -90,7 +90,7 @@
 | id | Integer PK | 自增主键 |
 | username | String(64) UNIQUE | 登录名 |
 | email | String(256) UNIQUE | 邮箱 |
-| role | Enum(admin/analyst/auditor/demo) | 角色 |
+| role | Enum(admin/analyst/auditor/demo) | 角色（其中内部兼容值 demo 对应业务观察员） |
 | hashed_password | String(256) | 哈希后密码 |
 | is_active | Boolean | 账号是否启用 |
 | created_at | DateTime | 创建时间 |
@@ -194,7 +194,7 @@
 | result_distance / result_cost / result_time | Float | 路径多维度量 |
 | proof_hash | String(256) | HMAC 证明值 |
 | verify_result | Boolean | 验证是否通过 |
-| tampered | Boolean | 是否触发篡改演示 |
+| tampered | Boolean | 是否触发异常校验场景 |
 
 ### 9. ZKGCNProof（零知识推理证明）
 
@@ -212,7 +212,7 @@
 | proof_hash | String | Groth16 风格证明 Hash |
 | vk_hash / pk_hash | String | 验证密钥/证明密钥 Hash |
 | verify_result | Boolean | 验证是否通过 |
-| tampered | Boolean | 是否触发篡改演示 |
+| tampered | Boolean | 是否触发异常校验场景 |
 | proof_size_kb | Float | 证明大小（KB） |
 
 ### 10. RiskEvent（风险事件）
@@ -228,7 +228,7 @@
 | risk_score | Float | 风险评分（0-100） |
 | status | Enum(open/investigating/resolved) | 处理状态 |
 
-### 11. DemoScenario（行业演示场景）
+### 11. DemoScenario（行业方案场景，内部模型名）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -236,7 +236,7 @@
 | scenario_key | Enum(finance/medical/government) UNIQUE | 场景标识 |
 | title | String | 场景名称 |
 | description | Text | 场景说明 |
-| steps | JSON | 演示步骤列表 |
+| steps | JSON | 业务流程步骤列表 |
 | asset_id | FK → assets | 关联资产 |
 | last_run_at | DateTime | 上次执行时间 |
 | last_result | JSON | 上次执行结果 |
@@ -350,7 +350,7 @@
 **输入**：
 - 图资产（节点/边带多维权重：距离、费用、时间）
 - 查询参数：起点、终点、约束阈值（距离、费用、时间、预算）
-- 是否触发篡改演示（`tamper=true`）
+- 是否触发异常校验场景（`tamper=true`）
 
 **输出**：
 - `encrypted_graph_summary`：加密图描述（真实节点数、哑边数）
@@ -358,16 +358,16 @@
 - `result_path`：最优约束路径
 - `result_distance / result_cost / result_time`：路径多维度量
 - `proof_hash`：HMAC 证明值（用于验证结果未被篡改）
-- `verify_result`：验证是否通过（篡改演示时为 false）
+- `verify_result`：验证是否通过（异常校验场景时为 false）
 - `protocol_steps`：四角色协议逐步交互记录
 
 **关键步骤**：
-1. **图加密（GO）**：GO 对图中每条真实边的权重进行同态思想加密（密钥加偏移），并随机插入若干哑边（Dummy Edge）混淆图结构
+1. **图加密（GO）**：GO 对图中每条真实边的权重进行受保护摘要处理，并随机插入若干哑边（Dummy Edge）混淆图结构
 2. **加密图上传（GO→CS）**：GO 将加密图发送至 CS 存储
 3. **查询提交（QU→Proxy）**：QU 向 Proxy 提交加密查询请求（约束参数亦经过加密）
 4. **约束最短路径搜索（CS）**：CS 在加密图上运行多约束最短路径算法（基于 Dijkstra 变体），返回候选路径集合
 5. **结果解密与验证（Proxy→QU）**：Proxy 解密路径权重，计算 HMAC 签名，QU 使用共享密钥验证签名完整性
-6. **篡改攻击演示**：模拟 CS 修改返回路径权重，HMAC 验证失败，触发红色告警
+6. **异常校验场景**：模拟 CS 修改返回路径权重，HMAC 验证失败，触发告警
 
 **核心文件**：`backend/app/algorithms/vpcs.py`
 
@@ -375,18 +375,18 @@
 
 ### 6. zkGCN（图卷积网络推理零知识证明）
 
-**算法原理**：将 GCN 的前向推理过程转化为算术电路，通过 fixed-point 定点量化将浮点运算变为整数域运算，构建 R1CS（Rank-1 Constraint System）约束系统，生成 Groth16 风格的简洁零知识证明（zk-SNARK），使任意验证者在不获知模型参数或输入数据的条件下验证推理结果的正确性。
+**算法实现边界**：执行真实 GCN 前向推理（H^(l+1) = σ(Ã·H^(l)·W^(l))），逐层记录计算见证（Witness）并构建 SHA-256 哈希承诺链，生成工程化的 proof/vk/pk 摘要结构，对推理完整性进行验证。**注意**：当前版本使用哈希承诺模拟 Groth16/zk-SNARK 结构，不含真实 R1CS 电路约束系统或 fixed-point 算术电路。
 
 **输入**：
 - 图资产（邻接矩阵 + 节点特征矩阵）
-- GCN 模型参数（层数、隐藏维度；演示中使用模拟参数）
-- 是否触发篡改演示
+- GCN 模型参数（层数、隐藏维度）
+- 是否触发异常校验场景
 
 **输出**：
 - `layer_summaries`：各 GCN 层计算摘要（输入维度、输出维度、激活函数）
 - `inference_result`：节点分类结果（每个节点的类别概率）
 - `adjacency_summary`：邻接矩阵规模描述
-- `witness_summary`：证明 Witness 摘要（R1CS 变量数、约束数）
+- `witness_summary`：分层见证摘要（各层输出哈希）
 - `proof_hash`：Groth16 风格证明 Hash
 - `vk_hash / pk_hash`：验证密钥/证明密钥 Hash
 - `verify_result`：验证是否通过
@@ -394,12 +394,11 @@
 - `explanation_steps`：推理+证明全流程逐步解析
 
 **关键步骤**：
-1. **GCN 前向推理**：H^(l+1) = σ(Ã · H^(l) · W^(l))，Ã 为归一化邻接矩阵，σ 为 ReLU 激活函数
-2. **Fixed-Point 量化**：将浮点权重矩阵 W 和特征矩阵 H 量化为整数域（定点小数，精度因子 2^16），使后续运算在整数域完成，满足 R1CS 要求
-3. **R1CS 约束构造**：将每次矩阵乘法和激活函数转化为形如 (a · b = c) 的二次约束，构建稀疏约束矩阵 (A, B, C)
-4. **Witness 生成**：计算满足所有约束的 Witness 向量（中间计算值的完整赋值）
-5. **Groth16 风格证明生成**：使用证明密钥（pk）和 Witness 生成紧凑证明 π（演示实现为 SHA256 承诺链），输出 proof_hash
-6. **证明验证**：使用验证密钥（vk）和公开输入 Hash 验证 π 的有效性；篡改演示时修改推理结果，证明验证失败
+1. **GCN 前向推理**：H^(l+1) = σ(Ã · H^(l) · W^(l))，Ã 为归一化邻接矩阵，σ 为 ReLU/Softmax 激活函数
+2. **分层见证生成**：对每层的输出矩阵计算 SHA-256 哈希（witness_hash），与盐值（salt）绑定形成分层哈希链
+3. **证明密钥构造**：将所有层的 witness_hash 串联哈希生成证明密钥 pk_hash，公开输入哈希 public_input_hash
+4. **证明摘要生成**：SHA256(pk_hash + public_input_hash + logits) 生成 proof_hash，形成证明三元组结构摘要
+5. **证明验证**：重新执行 GCN 推理并重构 proof_hash，比对是否一致；异常校验场景时修改推理输出使哈希不匹配，验证失败
 
 **核心文件**：`backend/app/algorithms/zkgcn.py`
 
@@ -450,7 +449,7 @@
 | GET | /api/audit | 获取审计日志列表（分页） |
 | GET | /api/audit/{id} | 获取单条日志详情 |
 | POST | /api/audit/verify-chain | 验证哈希链完整性 |
-| POST | /api/audit/tamper-demo | 触发篡改演示 |
+| POST | /api/audit/tamper-demo | 触发异常日志校验场景 |
 | GET | /api/audit/stats | 审计统计摘要 |
 
 ### 隐私计算（/api/privacy）
@@ -490,13 +489,13 @@
 | PUT | /api/risks/{id}/status | 更新处理状态 |
 | GET | /api/risks/stats | 风险统计摘要 |
 
-### 行业场景演示（/api/demo）
+### 行业方案编排（/api/demo）
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | /api/demo/scenarios | 获取所有场景列表 |
 | GET | /api/demo/scenarios/{key} | 获取场景详情 |
-| POST | /api/demo/scenarios/{key}/run | 执行场景演示（流式步骤输出） |
+| POST | /api/demo/scenarios/{key}/run | 执行业务场景流程（流式步骤输出） |
 
 ---
 
@@ -514,15 +513,15 @@ log_hash = SHA256(timestamp + user_id + action + target + result + detail + prev
 
 ### RBAC + ABAC 双模授权
 
-- **RBAC（基于角色）**：平台定义 admin/analyst/auditor/demo 四个角色，每个角色映射到一组默认操作权限。接口层在路由中检查当前用户角色。
+- **RBAC（基于角色）**：平台定义 admin、analyst、auditor 和业务观察员四类角色；其中内部兼容值 demo 对应业务观察员。接口层在路由中检查当前用户角色。
 - **ABAC（基于属性）**：`AuthorizationPolicy` 模型支持在合约维度定义细粒度属性策略，如 `{"data_domain": "finance", "purpose": "risk_control"}` 只允许特定属性用户访问。
 - **合约绑定**：每个授权策略必须绑定一个有效合约，合约到期后策略自动失效，风险监控模块同步触发 `expired_access` 事件。
 
-### 密码学演示声明
+### 安全边界说明
 
-> **注意**：本平台中的 VPCS 加密操作（边权重加密）和 zkGCN 零知识证明（Groth16 风格证明）均为**演示级实现**，使用 HMAC-SHA256 和哈希承诺链模拟密码学原语的行为逻辑。在真实生产环境中，应替换为：
+> **注意**：本平台中的 VPCS 加密操作（边权重加密）和 zkGCN 零知识证明（Groth16 风格证明）均为当前工程版本的验证实现，使用 HMAC-SHA256 和哈希承诺链模拟密码学原语的行为逻辑。在真实生产环境中，应替换为：
 >
 > - VPCS 边加密：AES-GCM 或同态加密库（如 Microsoft SEAL）
 > - zkGCN 证明：完整的 zk-SNARK 实现（如 snarkjs、bellman、gnark）
 >
-> 当前实现完整呈现了协议的交互流程与安全属性，足以支撑算法原理的演示与验证。
+> 当前实现完整呈现了协议的交互流程与安全属性，足以支撑方案联调、链路验证和技术汇报。

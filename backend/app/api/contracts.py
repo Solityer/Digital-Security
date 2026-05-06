@@ -24,7 +24,7 @@ ROLE_LABELS = {
     "admin": "平台管理员",
     "analyst": "数据分析师",
     "auditor": "审计专员",
-    "demo": "演示账号",
+    "demo": "业务观察员",
 }
 
 

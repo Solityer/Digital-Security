@@ -1,5 +1,5 @@
 # network diagnosis
-2026-04-27T10:28:30+08:00
+2026-04-28T16:21:24+08:00
 
 ## hostname -I
 192.168.31.160 172.17.0.1 172.18.0.1 100.119.39.38 fd7a:115c:a1e0::9f01:27c5 
@@ -11,24 +11,24 @@ default via 192.168.31.1 dev wlP9s9 proto dhcp src 192.168.31.160 metric 600
 192.168.31.0/24 dev wlP9s9 proto kernel scope link src 192.168.31.160 metric 600 
 
 ## ss -ltnp
-LISTEN 0      2048                       0.0.0.0:8000       0.0.0.0:*    users:(("python",pid=239492,fd=13))        
-LISTEN 0      511                        0.0.0.0:3000       0.0.0.0:*    users:(("node",pid=240038,fd=27))          
+LISTEN 0      2048                       0.0.0.0:8000       0.0.0.0:*    users:(("python",pid=415147,fd=13))        
+LISTEN 0      511                        0.0.0.0:3000       0.0.0.0:*    users:(("node",pid=415167,fd=26))          
 
 ## curl -I http://127.0.0.1:3000
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 HTTP/1.1 200 OK
 Vary: Origin
 Content-Type: text/html
 Cache-Control: no-cache
-Etag: W/"35a-nocmS5o25YsKZRtKay46cLzuc1M"
-Date: Mon, 27 Apr 2026 02:28:30 GMT
+Etag: W/"36a-OdZNpBfW8PvLvS1BLZK9T/yPa/s"
+Date: Tue, 28 Apr 2026 08:21:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=5
 
 
 ## curl http://127.0.0.1:3000/health
-{"status":"ok","service":"数智安行 API","version":"1.0.0","modules":{"database":"operational","graph_sdp":"operational","gcc_sdp":"operational","gs_ldp":"operational","ndkd":"operational","vpcs":"operational","zkgcn":"operational","risk_engine":"operational","audit":"operational"},"timestamp":"2026-04-27T02:28:30.764677"}
+{"status":"ok","service":"数智安行 API","version":"1.0.0","modules":{"database":"operational","graph_sdp":"operational","gcc_sdp":"operational","gs_ldp":"operational","ndkd":"operational","vpcs":"operational","zkgcn":"operational","risk_engine":"operational","audit":"operational"},"timestamp":"2026-04-28T08:21:24.726670"}
 ## curl http://127.0.0.1:8000/health
-{"status":"ok","service":"数智安行 API","version":"1.0.0","modules":{"database":"operational","graph_sdp":"operational","gcc_sdp":"operational","gs_ldp":"operational","ndkd":"operational","vpcs":"operational","zkgcn":"operational","risk_engine":"operational","audit":"operational"},"timestamp":"2026-04-27T02:28:30.829550"}
+{"status":"ok","service":"数智安行 API","version":"1.0.0","modules":{"database":"operational","graph_sdp":"operational","gcc_sdp":"operational","gs_ldp":"operational","ndkd":"operational","vpcs":"operational","zkgcn":"operational","risk_engine":"operational","audit":"operational"},"timestamp":"2026-04-28T08:21:24.789128"}

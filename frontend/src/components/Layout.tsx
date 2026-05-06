@@ -12,6 +12,7 @@ import {
   Theater,
   Shield,
   Activity,
+  Stethoscope,
 } from 'lucide-react'
 
 const navItems = [
@@ -23,7 +24,8 @@ const navItems = [
   { path: '/zkgcn',     icon: Brain,           label: '可验证推理zkGCN' },
   { path: '/risks',     icon: AlertTriangle,   label: '风险监控预警' },
   { path: '/audit',     icon: ScrollText,      label: '审计追踪' },
-  { path: '/scenarios', icon: Theater,         label: '行业场景演示' },
+  { path: '/scenarios', icon: Theater,         label: '行业解决方案' },
+  { path: '/diagnostics', icon: Stethoscope,   label: '系统诊断' },
 ]
 
 interface LayoutProps {
@@ -59,11 +61,9 @@ export default function Layout({ children }: LayoutProps) {
               className="text-xl font-black tracking-wider text-tech"
               style={{ letterSpacing: '0.15em' }}
             >
-              数图信枢
+              数智安行
             </span>
-            <span className="text-slate-400 text-sm ml-3 hidden sm:inline">
-              图数据可信治理与智能流通平台
-            </span>
+            <span className="text-slate-400 text-sm ml-3 hidden sm:inline">图数据可信治理与智能流通平台</span>
           </div>
         </div>
 
@@ -131,9 +131,9 @@ export default function Layout({ children }: LayoutProps) {
           <div className="mt-auto pt-4 px-4 pb-2">
             <div className="divider" />
             <p className="text-xs text-slate-600 text-center leading-5">
-              数智安行平台
+              数智安行平台｜
               <br />
-              图数据可信治理
+              图数据可信治理与智能流通
             </p>
           </div>
         </aside>
@@ -154,7 +154,7 @@ export default function Layout({ children }: LayoutProps) {
         className="flex-shrink-0 flex items-center justify-center h-8 text-xs text-slate-600"
         style={{ borderTop: '1px solid #1e293b', background: '#090d1a' }}
       >
-        数智安行平台 | 图数据可信治理与智能流通 &nbsp;©&nbsp; 2025
+        数智安行平台｜图数据可信治理与智能流通 &nbsp;©&nbsp; 2025
       </footer>
     </div>
   )

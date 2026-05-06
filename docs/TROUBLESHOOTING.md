@@ -60,7 +60,7 @@ curl -s -X POST http://127.0.0.1:8000/api/assets/1/graph/generate
 ### 6. 审计链校验返回 false
 
 - 这不一定是服务坏掉。
-- 当前演示数据中包含篡改演示相关记录，`verify-chain` 返回 `false` 可能是预期现象。
+- 当前基线数据中包含异常日志校验场景相关记录，`verify-chain` 返回 `false` 可能是预期现象。
 - 关注点应是“接口正常返回且页面能展示 tampered IDs 与告警状态”。
 
 ### 7. 外部设备无法访问 3000 端口

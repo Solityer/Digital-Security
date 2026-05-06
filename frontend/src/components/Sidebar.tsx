@@ -21,7 +21,7 @@ const navItems = [
   { path: '/zkgcn',     icon: Brain,           label: '可验证推理zkGCN' },
   { path: '/risks',     icon: AlertTriangle,   label: '风险监控预警' },
   { path: '/audit',     icon: ScrollText,      label: '审计追踪' },
-  { path: '/scenarios', icon: Theater,         label: '行业场景演示' },
+  { path: '/scenarios', icon: Theater,         label: '行业解决方案' },
   { path: '/diagnostics', icon: Stethoscope,   label: '系统诊断' },
 ]
 

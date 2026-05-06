@@ -368,9 +368,11 @@ class GSLDPRequest(BaseModel):
     asset_id: int | None = None
     created_by: int | None = None
     epsilon: float = Field(2.0, gt=0)
+    mode: str = Field("edge_ldp", pattern="^(node_ldp|edge_ldp)$")
+    n_groups: int = Field(5, ge=1, le=20)
     randomize_edges: bool = True
     randomize_attributes: bool = True
-    edge_flip_prob: float = Field(0.1, ge=0.0, le=1.0)
+    edge_flip_prob: float = Field(0.0, ge=0.0, le=1.0)
     attr_noise_scale: float = Field(0.5, gt=0)
 
 

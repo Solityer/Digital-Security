@@ -51,7 +51,7 @@ require_command npm
 require_command curl
 
 echo "========================================="
-echo "  数智安行 | 数据可信治理平台"
+echo "  数智安行｜图数据可信治理与智能流通平台"
 echo "  启动开发环境"
 echo "========================================="
 
@@ -68,7 +68,7 @@ PIP_BIN="$BACKEND_DIR/.venv/bin/pip"
 echo "[1/5] 安装后端依赖"
 "$PIP_BIN" install -q -r requirements.txt
 
-echo "[2/5] 初始化数据库和种子数据"
+echo "[2/5] 初始化数据库和基线数据"
 "$PYTHON_BIN" - <<'PY'
 import asyncio
 import sys

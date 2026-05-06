@@ -199,6 +199,8 @@ async def run_gs_ldp_endpoint(
     algo_result = run_gs_ldp(
         graph_dict,
         epsilon=body.epsilon,
+        mode=getattr(body, "mode", "edge_ldp"),
+        n_groups=getattr(body, "n_groups", 5),
         randomize_edges=body.randomize_edges,
         randomize_attributes=body.randomize_attributes,
         edge_flip_prob=body.edge_flip_prob,
@@ -208,6 +210,8 @@ async def run_gs_ldp_endpoint(
 
     params = {
         "epsilon": body.epsilon,
+        "mode": getattr(body, "mode", "edge_ldp"),
+        "n_groups": getattr(body, "n_groups", 5),
         "randomize_edges": body.randomize_edges,
         "randomize_attributes": body.randomize_attributes,
         "edge_flip_prob": body.edge_flip_prob,

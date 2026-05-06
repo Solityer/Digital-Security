@@ -1,0 +1,1162 @@
+2024 IEEE International Conference on Web Services (ICWS)
+
+2024 IEEE International Conference on Web Services (ICWS) | 979-8-3503-6855-0/24/$31.00 ©2024 IEEE | DOI: 10.1109/ICWS62655.2024.00145
+
+VPCS: Verifiable Query Scheme for
+Privacy-preserving Constrained Shortest Path over
+Encrypted Graph Data
+Shiyun Hea , Hongfa Ding∗, a, b, c , Tian Tiana , Hai Liua , Heling Jianga
+a Guizhou University of Finance and Economics, China
+b Guizhou University, China
+c Data Security Certification (Guizhou) Co.,Ltd,China
+
+Abstract—Currently, massive graph data, including social
+networks and biological proteins, is extensively utilized and
+contains a substantial amount of sensitive information. As cloud
+computing advances, graph data owners are increasingly inclined
+to outsource their large-scale graph data to cloud servers for
+diverse graph data query services. However, the seemingly
+limitless storage and computing capabilities present both opportunities and privacy challenges that are difficult to address.
+Recent research has proposed various schemes for querying
+outsourced graph data in an encrypted state. Unfortunately,
+many of these schemes fail to guarantee the correctness of
+query results under malicious models and may inadvertently
+disclose sensitive information within the graph data. Constrained
+shortest path (CSP) queries aim to find the shortest path between
+two vertices while adhering to specific threshold constraints. In
+this work, we propose a robust verifiable query scheme called
+VPCS that ensures privacy-preserving CSP queries on encrypted
+graphs. Our scheme achieves accurate and verifiable results while
+protecting the privacy of critical graph data information, with the
+exception of the number of vertices. Extensive experiments using
+real-world data sets validate the effectiveness of our scheme.
+Index Terms—Encrypted Graph, Verifiable Query, Constrained Shortest Path, Outsourcing
+
+I. I NTRODUCTION
+Graph data inherently presents entities and their associated
+features in both information and physical worlds. With the advancements in information technology, graph data has received
+wide attention from academia and industry. Various domains
+generate massive amounts of graph data, such as social media,
+scientific citations, email systems, and biological molecules.
+The collection, storage, mining, analysis, and utilization of
+these massive graph data often exceed the capabilities of the
+data owners. Therefore, it has become common practice to
+outsource or delegate the mining and analysis of graph data to
+cloud computing or third-party organizations. However, graph
+data in an outsourcing computation scenario faces risks of
+privacy and trade secret leakage, as it contains a significant
+amount of sensitive information [1], [2], such as personal
+identities, political affiliations, and geographical locations. In
+This work is supported by NSFC (No.62002080), the Natural Science
+Researching Program of D.o.E. of Guizhou (No. Qian Edu. Tech. [2023] 065,
+Qian Edu. Tech. [2023]014), the China Postdoctoral Science Foundation (No.
+2020M673584XB) and the Science and Technology Program of Guanshanhu
+District of Guiyang (No. Guan-Tech-Contract [2023]16).
+*Corresponding author: Hongfa Ding (hfding@mail.gufe.edu.cn)
+
+2836-3868/24/$31.00 ©2024 IEEE
+DOI
+
+addition, several tools have emerged to address the analysis
+and processing of massive graphs, reflecting the widespread
+adoption of the technology, including GraphLab [3], TurboGraph++ [4] and GraphBase [5].
+Compared to the shortest path, the Constrained Shortest
+Path (CSP) finds more applications in real-life scenarios. For
+instance, consider a transportation network where a delivery
+company needs to find the shortest route between two cities.
+By utilizing the shortest distance query, the company can
+minimize the costs such as money, travel time, and distance.
+This enables efficient planning of delivery routes, reducing
+fuel consumption, and improving overall logistics operations.
+However, there are always many constrained conditions, such
+as delivery time or limited budget. Thus, CSP plays a more
+important role in optimizing the transportation network. Several proposed solutions address the problem of approximate or
+exact CSP queries on plaintext graphs [6]–[8]. However, these
+solutions fail to guarantee the privacy of the graph data. Conversely, some solutions addressing CSP queries on encrypted
+graphs do not provide query users with the ability to verify
+the correctness of the query results [9]–[11]. Even various
+techniques, such as merkle hash tree [12], zero-knowledge
+proof [13], [14], and stream verification models [15] are
+adopted to verifiable computing schemes, but these methods
+are not suitable for CSP query verification on encrypted graph
+data. Consequently, designing efficient and secure verifiable
+computation schemes on encrypted graph data remains an
+urgent problem to be addressed.
+To this end, we suggest VPCS, a scheme for efficiently
+and verifiably querying double-CSP over large-scale encrypted
+graph data. In this work, we make use of dummy edges to
+create a comprehensive outsourced graph data structure. Then
+we employ bilinear mapping and various cryptographic techniques such as secure multiparty computing, Diffe-Hellman
+and zero-knowledge proof to develop a Verifiable CSP query
+framework VPCS. This framework is designed to verify the
+correctness and integrity of the results provided by the outsourced server. In order to facilitate CSP querying, we utilize
+the Threshold Paillier Cryptosystem(TPC), which supports
+homomorphic addition operations, to define protocols such as
+Secure Sharing Comparison(SSC) and Secure Minimum(SM).
+By using VPCS, we can ensure the privacy of the graph data
+
+1217
+
+while it is outsourced by the graph data owner. Additionally,
+the querying user is able to leverage proof information to
+verify the correctness and integrity of the query results. The
+key contributions of this work can be summarized as follows.
+1) We propose the first graph ciphertext outsourcing system framework that supports privacy-preserving verifiable
+CSP queries. In our system framework, the sensitive
+information contained in the graph data is protected
+through the use of graph ciphertexts. These ciphertexts
+are generated by applying an encryption scheme called
+TPC that is an extension of the Paillier cryptosystem that
+retains the semantic security and additive homomorphism
+properties, which can ensures the protection of sensitive
+information.
+2) We suggest VPCS, which ensures the protection of graph
+data privacy while enabling query users to verify the
+correctness of the obtained query results. This scheme
+provides a robust solution that allows users to validate
+the accuracy of the results while preserving the privacy
+of the underlying graph data.
+3) We propose a novel zero-knowledge proof protocol to
+assist query users in verifying the correctness of their
+query results when the encrypted graph data is outsourced
+to a potentially malicious Computation Server(CS); This
+ensures that the query results are valid without revealing
+any sensitive information.
+4) We conduct a comprehensive security analysis of VPCS,
+proving its resilience against Adaptive Chosen Query
+and Verification attack(IND-CQVA). Additionally, we
+perform extensive theoretical analysis and experimental
+evaluations using real-world data sets, demonstrating the
+practical advantages and effectiveness of VPCS.
+II. RELATED WORK
+Graph data has seen a surge in its outsourcing to cloud
+servers for storage and querying operations. Graph data outsourcing encompasses both plaintext [16]–[18] and encrypted
+[19]–[22]graph data for subgraph matching, shortest path
+querying, attribute querying, and Graphs’ Intersection and
+Union. Here, we just focus on the work related to privacy
+preserving and verification.
+After the initial work of structured encryption and encrypted graph data outsourcing by Chase and Kamara [23],
+various schemes for privacy preserving of graph computation
+have been proposed. Balanton et al. [24] designed oblivious
+algorithms for several classical graph problems, including
+breadth-first search, single-source shortest paths, minimum
+spanning tree, and maximum flow. Chang et al. [19] proposed
+a k-isomorphism based privacy-preserving subgraph matching
+scheme for large-scale graph data. Xu et al. [20] presented a
+privacy-preserving subgraph matching scheme based on secure
+multi-party computation. Suntaxi et al. [21] presented a scalefree graph query processing model focused on neighbor and
+adjacency queries by introducing the concept of confidentiality
+for graph-structured data and bucket number models. All these
+works can preserve the privacy of the outsourced graph data
+
+while providing different graph querying services. Among
+these services, shortest distance and path querying are the
+fundamental operations of graph computing, and there is an
+urge for privacy-preserving.
+For the shortest path, numerous approaches to achieving
+approximate or accurate computation of the shortest path have
+been proposed to meet the diverse requirements of outsourcing
+computations on encrypted graph data [24]–[26]. After the
+original privacy preserving research about encrypted shortest
+path computing by Balanton et al. [24], Aly et al. [25]
+proposed the first special protocol for computing shortest paths
+by using black-box functions in a general multi-party computation environment. However, this protocol is only secure
+when participants are honest. Zhu et al. [27] proposed the
+Shortest Path Search for Synonymous Queries(SPSQ) solution,
+which supports synonym queries on encrypted graph data
+in cloud computing, utilizing stem extraction algorithms and
+encryption mechanisms. Lu et al. [28] introduced an online
+search method with pre-processed indexing for approximating
+point-to-point shortest paths. Liu et al. [26] proposed a secure
+order-preserving encryption scheme to perform approximate
+shortest distance queries by two-hop cover labeling. However,
+none of these schemes supports Constrained Shortest Distance
+(CSD) or CSP query.
+To query CSD over encrypted graph data, Shen et al. [29]
+presented Connor, a graph-encryption scheme that supports approximate CSD query by employing a tree-based comparison
+protocol and Somewhat Homomorphic Encryption(SWHE).
+Subsequently, the same team [30] introduced Acro, another
+graph-encryption scheme designed to achieve high query
+accuracy for α-approximate CSD query. However, both of
+these schemes [29], [30] expose sensitive information such as
+out-degrees, in-degrees, and paths of two query vertices due
+to the Two-Hop Cover Lable(2HCL) structure. Zhang et al.
+[10] proposed a TPC based scheme called PGAS for privacy
+preserving accurate CSD querying by employing 2HCL and
+Pseudo-Random Function(PRF). But it still leaks the topological information by 2HCL. Wang et al. [11] employed TPC and
+virtual edges to propose a stronger privacy-preserving CSD
+query scheme called SPCS, they encrypt the edges and cost
+values in a homomorphic way and hide the the topological
+information by virtual edges, thus the sensitive information
+is protected while querying. However, these approaches [10],
+[11], [29], [30] just provide CSD query rather than a verification of the result for users.
+To verify the outsourced result of graph computing, Fan
+et al. [17] applied the Merkle tree to authenticate the subgraph query service of outsourced graph databases, which
+was inspired by verifiable outsource computation [31]. After that, Peng et al. [16] proposed a scheme for efficient
+verification of subgraph similarity on outsourced graph data
+using metric indexing and a metric tree. Subsequently, Chen
+et al. [18] utilized Merkle Hash Tree to develop a verification
+scheme for sub-graph querying over social networks. With
+the advancement of verifiable computation, methods for verifiable outsourcing computation on encrypted graph data have
+
+1218
+
+been gradually proposed. Zhu et al. [32] presented a verifiable outsourcing computation scheme for subgraph matching
+queries that allows for public and designated verification by
+utilizing a new cryptographic primitive called Boneh-GohNissim cryptosystem. Zuo et al. [33] proposed a verifiable
+and privacy preserving scheme for graph data intersection
+querying in social network datasets based on a cryptographic
+accumulator. Yao et al. [12] proposed three schemes for
+verifiable single-attribute queries on outsourced social graphs
+by using cryptographic auxiliary information and a Merkle
+hash tree. However, these schemes just perform verification
+of queries for graphs such as subgraph matching, intersection,
+and attribute, not for verifiable CSP queries.
+As mentioned above, there are various outsourcing schemes
+for encrypted graph data. Although some schemes provide
+CSD queries and some are verifiable solutions, they are not
+suitable for CSP querying. Thus, there still is an urgent requirement for a verifiable query scheme for privacy-preserving
+CSP over encrypted graph data.
+To this end, we propose a novel scheme for secure and
+verifiable CSP querying over encrypted graph data based
+on TPC and zero knowledge. In this scheme, we employ
+homomorphism encryption and virtual edge construction to
+protect both private attributes and the topological structure
+of graph data. Then, in the adjacency matrix, we use the
+feature that the row vector and column vector of the vertex
+can be regarded as the out-degree set and in-degree set of
+the vertex to facilitate our calculation of CSP. We utilize the
+TPC to generate ciphertext and bilinear mapping-based zeroknowledge proof protocol to perform secure and verifiable
+CSP queries on encrypted data.
+III. THRESHOLD PAILLIER CRYPTOSYSTEM
+In this section, we provide the background and preliminary
+concepts for VPCS.
+Definition 1 (Threshold Paillier Cryptosystem(TPC) [34]):
+TPC is a cryptographic scheme based on the Paillier encryption algorithm with thresholds. It can defined by the tuple of
+algorithms T P C(KeyGen, Enc, Dec, Spkey, P dec, Cdec).
+KeyGen(ξ). Choose a security parameter ξ and two large
+prime numbers p and q, such that |p| = |q| = ξ. Due to the
+properties of secure primes, there exit two secure primes p′
+and q ′ such that p = 2p′ + 1, q = 2q ′ + 1. Then, we obtain the
+values of N = pq, g = 1 + N and λ = lcm(p − 1, q − 1)/2.
+Finally, the public key is pk = N , and the private key is
+sk = λ.
+Enc(m, N ). Given a plaintext m ∈ ZN , by selecting a
+random number r ∈ Z, the corresponding ciphertext [m] is
+obtained by
+[m] = g m · rN modN 2 = (1 + mN ) · rN modN 2 .
+
+(1)
+
+Dec([m], sk). Due to the properties of the encryption
+scheme. To decrypt the ciphertext [m] by sk, we can utilize
+the following equations.
+[m]λ = rλN (1 + mN λ)modN 2 = (1 + mN )λ.
+
+(2)
+
+Additionally, it is given that gcd(N, λ) = 1. Therefore, the
+plaintext m can be obtained by
+m = L([m]λ modN 2 )λ−1 modN,
+
+(3)
+
+where L(x) = x−1
+N .
+Spkey(sk). By randomly selecting δ that satisfies δ ≡
+0modλ and δ ≡ 1modN 2 , where
+gcd(N 2 , λ) = 1, we can dePk−1
+fine a polynomial f (x) = δ+ i=1 ri ·xi , and r1 , · · · , rk−1 ∈
+Z∗λN are k − 1 random numbers. Let β1 , · · · , βn ∈ Z∗λN 2 be
+no-zero elements known to all n participants. Finally, we can
+define ski = f (βi ) and send it to the i-th participant.
+P dec([m], ski ). The i-th participant computes a partial private key decryption based on his own private key ski = f (βi )
+and the ciphertext[m] as
+P Di = [m]f (βi ) modN 2 .
+
+(4)
+
+Cdec(P D, β). Given all the partial decryption P D =
+{P D1 , · · · , P Dd }, where d ≥ k and the non-zero elements
+β1 , · · · , βn ∈ Z∗λN 2 , and selecting k distinct numbers as
+U = {u1 , · · · , uk }, where 1 ≤ ui ≤ d. Then
+T =
+
+k
+Y
+
+(P Di )△(ui ,0) modN 2 .
+
+(5)
+
+i=1
+
+Q
+Here, △(ui , x) = j∈U,j̸=si βux−β
+−βj . Finally, the decrypted
+i
+result is m = L(T ).
+Furthermore, in T P C(KeyGen, Enc, Dec, Spkey, P dec, Cdec),
+for any m ∈ ZN , we have
+[m]N −1 = (1 + (N − 1)m · N ) · rN −1·N modN 2 = [−m]. (6)
+Additionally, for the same public key pk, the system satisfies
+additive homomorphism, i.e., Add([m11 ], [m2 ]) = Enc(m1 +
+m2 ).
+IV. T HE F RAMEWORK AND A LGORITHMS OF VPCS
+A. The Framework of VPCS
+The owner GO of graph data G = (V, E) wants to outsource
+G to the Computation Server CS, and CS cooperates with
+a semi-honest server proxy Proxy to provide verifiable CSP
+querying for Query Users QU. The framework overview of
+VPCS is shown in Fig. 1. There are four participants in this
+framework: GO, CS, Proxy, and QU, and these participants
+interact with each other.
+GO. GO generates the keys of VPCS, encrypts the raw
+graph data, and generates auxiliary information for verification. Firstly, GO executes algorithm KeyGen to generate a
+threshold Paillier key pair (pk, sk), a PRF key k and PRF
+FPRF and algorithm Spkey() to divide private key sk into
+sk1 and sk2 for enabling secure share comparison protocol
+SSC and Secure Minimum value algorithm SM between CS
+and Proxy. In there, GO send sk1 to Proxy, share sk2 to CS,
+and send the PRF FPRF , k and sk to QU through the security
+channel; Secondly, GO executes algorithm GraphEnc on G
+by using public key pk, k, and outputs ciphertext [G] with
+auxiliary information g p(S) , g, S and H. [G] is outsourced
+
+1219
+
+B. Components and Workflow of VPCS
+
+Fig. 1: System model of our scheme.
+
+to CS, g p(S) , g and S are sent to all participants, and H is
+shared with CS and Proxy. Note that GraphEnc can perform
+a line-by-line encryption process on the adjacency matrix of
+G. Thus, the computation requirement of GO is not too large.
+CS. CS stores [G], g p(S) , g, S, and H received from GO,
+computes the CSP query, and verification cooperated with
+Proxy for QU’s queries. Firstly, CS stores [G], g p(S) , g, S
+and H, [G] is stored as an adjacency matrix, where each
+element represents a ciphertext triplet ([d], [c], [t]). These
+triplets correspond to the encrypted values of the distance,
+cost, and time between every pair of vertices. Secondly, after
+receiving a query token q from QU, CS executes algorithm
+CSP Query cooperated with Proxy and outputs the shortest
+path distpath and shortest distance distp . In VPCS, we assume
+CS is malicious, and CS may tamper, alter, and manipulate the
+data during storage and computing.
+Proxy. Proxy is semi-honest, stores g p(S) , g, S, and H received from GO, and computes the CSP query and verification
+cooperated with CS for QU’s queries. Proxy executes algorithm CSP Query cooperated with CS and outputs verifiable
+proof π.
+QU. QU generates query tokens for CSP queries and
+decrypts and verifies the queried results returned from CS
+and Proxy. Firstly, QU executes algorithm T okenGen() to
+generate a token T Qst if a CSP query from s to t is needed.
+Secondly, after receiving queried result distpath , distp and π
+from CS and Proxy, QU executes algorithm V erif y and Dec
+to verify and decrypt the queried result. Note that QU also can
+be played by GO, while it cannot collude with CS and Proxy.
+
+As shown in Sec.IV-A, there are four participants in VPCS,
+and they need to interact with each other to achieve verifiable
+and privacy-preserving CSP querying. And here, the algorithm
+components and workflow of VPCS are detailed.
+There are five algorithms and three protocols in VPCS,
+and the algorithms are KeyGen, GraphEnc, T okenGen,
+V erif y, and CSP Dec. The protocols are CSP Query, SSC
+and SM . And VPCS can be regarded as three parts, namely
+Initialization, Encryption and Outsourcing, and CSP Service
+Providing. The former two parts just need to be performed
+one time, and the last part can work thousands of times.
+Firstly, in the phase of initialization, GO generates and
+splits the keys for all the participants. Secondly, in the phase
+of encryption and outsourcing, GO encrypts the graph data
+and generates some auxiliary information. Then the encrypted
+data is outsourced to CS, and the auxiliary information is
+distributed to all relative participants. Thirdly, in the phase
+of CSP service providing, QU generates a querying token if a
+CSP query is needed and sends this token to CS and Proxy.
+Then, CS and Proxy query the CSP result and generate proofs
+of the CSP result interactively. Then, QU verifies and decrypts
+the CSP result with the proofs and private key.
+1) Initialization, Encryption, and Outsourcing: In initialization, GO executes KeyGen with security parameter ξ as
+input, and outputs (pk, sk). And GO executes Spkey to split
+sk into sk1 and sk2 , KeyGen and Spkey follow Def.1.
+GO chooses an arbitrary reversible PRF FPRF and generates
+symmetric key k.
+In Encryption and Outsourcing, GO executes GraphEnc
+with G, pk, k and FPRF as inputs, and outputs [G], g, S and
+G. Then GO outsources [G] to CS and sends auxiliary information g, S, and G to other relevant participants. GraphEnc
+is detailed in Alg. 1. In Alg. 1, G is presented as adjacency
+matrix A = (ai,j )n×n , and the values of ai,j = (di,j , ci,j , ti,j )
+are the actual values of distance, cost and time between vi and
+vj , and the values are infinity if there is no edge between vi
+and vj . Here, we employ a virtual edge φ and set considerable
+values (i.e., values greater than the biggest actual value.)
+instead of infinitive values.
+Not that, no one except GO can be aware of which edges
+are dummy edges φ due to the indistinguishability of TPC.
+This ensures the non-disclosure of the topological structure of
+G. Among the outputs of GraphEnc, g p(S) , g, and S are the
+auxiliary information for verifying the CSP result, and H is
+the auxiliary information for CSP querying.
+2) CSP Service Providing: In this phase, there are three
+steps as discussed above. Firstly, QU generates a query token
+by T okenGen as a query qst = (s, t, θ1 , θ2 ) need. qst means
+a CSP query from s to t with constraints of cost θ1 and time
+θ2 . T okenGen is detailed as Alg. 2 with qst , k, S, pk and
+g as inputs, and token T Qst as output. T Qst is sent to CS
+and Proxy for CSP querying. Note that α is reserved privately
+by QU as g α and g α·S play critical roles in verifying the
+correctness and integrity of the CSP result by QU himself.
+
+1220
+
+Algorithm 1 GraphEnc
+
+Protocol 1 CSPQuery
+
+Input: G = (V, E), k, FPRF and pk.
+Output: [A]n×n , H, S, g and g p(S) .
+1: V = (v1 , . . . , vn ) stores all vertices of G;
+2: H = FPRF (k, vi )n
+i=1 = [h1 , . . . , hn ];
+3: Encrypt [A]n×n by Enc of TPC, where [aij ] =
+Enc(aij , pk);
+4: Generate a random set S = {s1 , . . . , sn } with n elements;
+
+Input: CS: [A]n×n , H
+= [h1 , . . . , hn ], T Qst
+=
+(hs , ht , Θ1 , Θ2 , g α , g α·S ) and sk2 ; Proxy: sk1 , H =
+[h1 , . . . , hn ] and T Qst = (hs , ht , Θ1 , Θ2 , g α , g α·S )
+Output: CS: distpath and distp ; Proxy: π.
+1: CS:
+2: Set the row vector [A]hs ,· as Rs = (rs,1 , . . . , rs,n );
+3: Set the column vector [A]·,ht as Ct = (ct,1 , . . . , ct,n );
+4: Proxy:
+5: for i=1 to n do
+6:
+Set both I and P as n elements with 0;
+7:
+Set D = {i | (rs,i = φ) ∩ (ct,i = φ)};
+8:
+if i ∈ D then
+9:
+I[i] = H[i];
+10:
+else
+11:
+[pi ] = ([di ], [ci ], [ti ]), where [di ] = [ds,i ]·[dt,i ], [ci ] =
+[cs,i ] · [ct,i ], [ti ] = [ts,i ] · [tt,i ];
+12:
+CS and Proxy:
+13:
+a = SSC(P roxy : [ci ], Θ1 , sk1 ; CS : sk2 );
+14:
+b = SSC(P roxy : [ti ], Θ2 , sk1 ; CS : sk2 );
+15:
+if a = 0 or b = 0 then
+16:
+I[i] = H[i];
+17:
+else
+18:
+P [i] = [pi ]
+19:
+end if
+20:
+end if
+21: end for
+22: CS and Proxy:
+23: distp = [dmin ] = SM (P ), where CS obtains [dmin ] and
+also obtains the index i where the result is not the shortest
+path, and sets I[i] = H[i];
+24: Proxy:
+Pn
+Qn
+25: g δp(S) = {gP i=1 si ×hi }δ , g δαp(S) = { i=1 {g αsi }hi }δ ,
+n
+′
+g δp(S) = {g i=1,i̸=min si ×Ii · g hmin }δ .
+′
+Calculate g δαp(S) and g δαp(S) using I and [dmin ], where
+′
+the Proxy obtains a proof: π = {g δp(S) , g δαp(S) , g δp(S) }.
+
+Pn
+
+5: Compute g p(S) = g i=1 si ×hi ;
+6: Publish [A]n×n , g p(S) , g and S to all participants, share
+
+H with CS and Proxy.
+Algorithm 2 TokenGen
+Input: qst = (s, t, θ1 , θ2 ), k, S, pk and g.
+Output: T Qst .
+1: Compute hs = FPRF (k, s) and ht = FPRF (k, t);
+2: Compute Θ1 = [θ1 ] and Θ2 = [θ2 ] by Enc of TCP, where
+[θ] = Enc(θ, pk);
+3: Generate a random number α and compute g α ,g α·S =
+{g α·s1 , . . . , g α·sn };
+4: Set T Qst = (hs , ht , Θ1 , Θ2 , g α , g α·S ).
+
+Secondly, CS and Proxy search the CSP of QTst by protocol
+CSPQuery interactively. CSPQuery is detailed as Proto. 1
+with [A], H, QTst and sk2 as CS’s inputs, and H, QTst
+and sk2 as Proxy’s inputs. Then, distpath and distp are
+CS’s outputs, and π is the Proxy’s output. And as shown in
+Proto. 1, CSPQuery needs a secure sharing comparison SSC
+protocol and a Secure Minimum value SM algorithm to get
+the expected results. The details of SSC and SM will be
+presented in Sec. IV-C and Sec. IV-D, respectively. After calculating the CSD distp = [dmin ] and CSP distpath , the Proxy
+′
+will output a P
+proof π = {g δp(S) , g δαp(S)Q
+, g δp(S) }, where
+n
+n
+i=1 si ×hi }δ , g δαp(S)
+= { i=1 {g αsi }hi }δ ,
+g δp(S) = {g
+Pn
+si ×Ii
+δp(S)′
+hmin δ
+i=1,i̸
+=
+min
+} .
+g
+= {g
+·g
+Thirdly, after receiving π from Proxy and distpath , distp
+from CS, QU verifies distpath , distp via π and α by algorithm V erif y, and QU decrypts distpath , distp by algorithm
+CSP Dec if V erif y returns true. V erif y is detailed as Alg.
+4 with π and α as inputs, and boolean value b as output.
+CSP Dec is detailed as Alg. 5 with distpath , distp , b, g and
+sk as inputs, plaintext of CSP and CSD as outputs.
+C. Secure Sharing Comparison Protocol
+As mentioned above, when querying CSP over encrypted
+graph data, we need to compare two encrypted values [x] and
+[y] to determine which path or distance is shorter between two
+different edges. Here we present the SSC protocol inspired
+by the idea in [10], and our SSC protocol is different from
+the ones of Wang et al. [11]. The presented SSC protocol
+implements the comparison of two encrypted values based on
+private key splitting of TPC, and the SSC protocol is detailed
+as Proto. 2.
+
+In Proto. 2, the comparison is collaboratively conducted by
+Proxy and CS, ensuring a secure comparison protocol without
+compromising the complete decryption of the two ciphertests.
+Proto. 2 yields a Boolean value u∗ = 1 to Proxy if plaintext
+x < y, otherwise, x ≥ y. The data transmission between
+CS and Proxy occurs over a secure channel, ensuring the
+confidentiality of the communicated data.
+Firstly, Proxy obscures the the equivalence relation between
+x and y (line 2), and conceals the relationship between x and y
+further with r1 , r2 and b (line 3-9). Thus, CS cannot determine
+which of x or y is greater by decrypting [z] without knowledge
+of b.
+Here, if x and y are integers, we have
+
+1221
+
+x1 < y1 ⇐⇒ 2x + 1 < 2y ⇐⇒ x < y
+
+(7)
+
+x1 > y1 ⇐⇒ 2x + 1 > 2y ⇐⇒ x ≥ y
+
+(8)
+
+Protocol 2 SSC
+Input: Proxy: [x], [y] and sk1 ; CS: sk2 .
+Output: Proxy: u∗ .
+1: Proxy:
+2: [x1 ] = [x]2 [1] = [2x + 1],[y1 ] = [y]2 = [2y];
+3: Randomly choose r1 , r2 ∈ ZN ;
+4: Randomly choose a bit b ∈ {0, 1};
+5: if b = 1 then
+6:
+[z] = ([x1 ][y1 ]N −1 )r1 · [r2 ];
+7: else
+8:
+[z] = ([x1 ]N −1 [y1 ])r1 · [r2 ];
+9: end if
+10: z1 = P dec([z], sk1 );
+11: send [z], z1 to CS;
+12: CS:
+13: z2 = P dec([z], sk2 );
+14: P D = {z1 , z2 };
+15: z = Cdec(P D);
+16: if |z| > |N |/2 then
+17:
+u′ = 0;
+18: else
+19:
+u′ = 1;
+20: end if
+21: send u′ to Proxy;
+22: Proxy:
+23: if b = 1 then
+24:
+u∗ = u′ ;
+25: else
+26:
+u∗ = 1 − u′ .
+27: end if
+
+Algorithm 5 CSPDec
+Input: b, g, sk, distpath , and distp .
+Output: plaintext of CSP and CSD (p, c).
+1: if b=0 then
+2:
+return (0, 0).
+3: else
+4:
+p = DP RF (distpath , k), c = Dec(distp , sk), and
+DP RF is the inversion of FPRF .
+5: end if
+
+based on the SSC protocol. The details of SM protocol are
+shown in Proto.3.
+Protocol 3 SM
+Input: Proxy: sk1 and P = {[p1 ], . . . , [pn ]}; CS: sk2 .
+Output: CS and Proxy: encrypted CSD [dmin ].
+1: Proxy:
+2: Set [dmin ] = [p1 ];
+3: for all i = 2, 3, · · · , n do
+4:
+if pi ̸== 0 then
+5:
+CS and Proxy:
+6:
+[dmin ] = SSC(P roxy : [pi ], [dmin ], sk1 ; CS : sk2 );
+7:
+end if
+8: end for
+
+V. C ORRECTNESS A NALYSIS
+
+Algorithm 4 Verify
+′
+
+Input: The proof π = {g δp(S) , g δαp(S) , g δp(S) }, α.
+Output: boolean b.
+1: b = 0;
+′
+2: if g δp(S) = g δp(S) then
+δαp(S)
+3:
+if e(g
+, g) = e(g δp(S) , g α ) then
+4:
+b = 1;
+5:
+end if
+6: else
+7:
+b = 0.
+8: end if
+
+Secondly, CS helps Proxy by recovering the paintext z of
+[z] (line 13-15), and computes the relationship between x and
+y (line 16-20), but he does not know which one is greater.
+Finally, Proxy computes the result u∗ based on the chosen bit
+b (line 23-27).
+D. Secure Minimum
+As mentioned in Sec. IV-B, protocol CSPQuery also needs
+a protocol to select the minimum over encrypted candidate
+CSDs. Here, we present the Secure Minimum (SM) protocol
+
+As we utilize the TPC to encrypt the GO’s raw graph,
+and the correctness of TPC has been proven by Liu et al.
+[34]. Thus, we just focus on the correctness analysis of the
+verification process in VPCS.
+Theorem 1: If VPCS strictly ensures the non-disclosure of
+parameters a and b while ensuring the correctness of Bilinear
+Mapping(BM), it can accurately guarantee the privacy of GO’s
+graph data without leakage and at the same time verify the
+correctness and integrity of QU’s query results from CS and
+Proxy.
+Proof 1: Leveraging BM, Bilinear Diffe-Hellman(BDH),
+and Deciaional Bilinear Diffie-Hellman(DBDH), the VPCS
+scheme enables verifiable CSP query verification, ensuring
+data privacy, result integrity, and correctness. The QU requests
+a query from the GO, who grants permission. The QU then
+generates a T Qst and sends it to CS and Proxy. Then, QU
+will receive the result of CSP and a Proof π = {g δp(S) ,g δαp(S) ,
+′
+g δp(S) } from CS and Proxy. QU will verify the CSP’s integrity
+and correctness by π.
+Using α and δ ensures privacy, preventing collusion and data
+forging. Thus, the above two parameters play a crucial role in
+CSP query and verification. δ limits QU’s node information to
+the CSP, and α prevents GO and Proxy collusion as the BDH
+and DBDH.
+QU verifies the shortest path computation by checking
+′
+?
+?
+equations g δp(S) = g δp(S) and e(g δαp(S) , g) = e(g δp(S) , g α )
+as the BM’s characteristic.
+
+1222
+
+Finally, by following this verification procedure based on
+the principles of BM, QU can effectively assess the correctness
+of the shortest path computation process performed by CS and
+Proxy.
+□
+VI. SECURITY DEFINITION AND ANALYSIS
+In this section, we conducted a detailed analysis of the
+security and privacy of the proposed VPCS. We began by
+formally defining the leakage function and presented proof of
+the security of VPCS under the IND-CQVA-security model,
+which is defined as Def. VI-B. Furthermore, we highlighted
+that VPCS achieves advanced privacy protection for verifiable
+queries compared to the approaches described in [10], [11],
+[29].
+A. Leakage Function
+1) Encryption leakage LEnc : The encryption leakage function LEnc indicates the amount of privacy information that can
+be inferred from the encrypted adjacency matrix [A]n×n . In
+our proposed VPCS, the adversary can only obtain the number
+of vertices, denoted as n, from the encrypted adjacency matrix
+[A]n×n of graph data G. Therefore, the form of the leakage
+function is LEnc (G) = n.
+2) Query leakage LQuery : For the query sequence Q =
+{(s1 , t1 , θ1,1 , θ1,2 ), · · · , (sn , tn , θn,1 , θn,2 )}, during the query
+token generation phase, the QU generates values for the
+query vertices using FPRF and encrypts the cost and time
+constraints using TPC. Due to the semantic security property
+of TPC, there is no probabilistic polynomial-time (PPT) algorithm that can determine which queries in the query sequence
+Q have the same cost constraints. Therefore, LQuery (Q) only
+includes the queries in the query sequence that target the
+same pair of vertices. This can be expressed as LQuery (Q) =
+{qi |∃qj ∈ Q/qi , Hsi = Hsj ∨Hti = Htj ∨Hsi = Htj ∨Hti =
+Hsj }.
+B. Security Definition
+In this section, we modify the security definitions proposed
+in [10], which is called IND-CQVA-security , and formalize
+it for our proposed graph outsourcing scheme VPCS.
+Definition 2 (IND-CQVA-security:): Let Ω=(KeyGen,
+GraphEnc, CSPQuery, Verify) denote an outsourcing system
+for encrypted graph data, and L = (LEnc , LQuery , Lverif y )
+be the leakage functions of Ω. Given a security parameter ξ,
+a semi-honest adversary A, a challenger C and a simulator S,
+we construct the following probabilistic experiment.
+1) RealΩ,A (ξ):
+• The adversary A selects a graph G and transmits it to
+the challenger C.
+• The challenger C runs KeyGen(ξ) to generate a key
+pair (pk, sk), PRF key k, and a generator g. Then, C
+executes GraphEnc(G, k, pk, g) to generate [A]n×n ,
+g p(s) , H and S, which are sent to A.
+• The adversary A adaptively generates a polynomial sequence of shortest path queries Q =
+
+{(s1 , t1 , θ1,1 , θ1,2 ), · · · , (sn , tn , θn,1 , θn,2 )} and sends
+it to C.
+• For each query qi = (si , ti , θi,1 , θi,2 ), C runs
+T okenGen(qi , K, S, pk, g) to obtain a query token
+T Qsi ti , and sends T Q = {T Qs1 t1 , · · · , T Qsn tn } to
+A.
+• The adversary A performs the shortest path query
+based on T Q using CSP Query, and then verifies the
+integrity and correctness of the computed results by
+executing verif y in collaboration with C.
+• A outputs a bit b ∈ 0, 1 as the result of this experiment.
+2) IdealΩ,A,S (ξ):
+• The adversary A selects a graph G and transmits it to
+the challenger C.
+• C provides the output of leakage function LEnc (G)
+to the simulator S, and then S generates and sends
+[A]n×n to A.
+• The adversary A adaptively generates a polynomial sequence of shortest path queries Q =
+{(s1 , t1 , θ1,1 , θ1,2 ), · · · , (sn , tn , θn,1 , θn,2 )} and sends
+it to C.
+• For each query qi = (si , ti , θi,1 , θi,2 ), C sends the
+output value of the leakage function LQuery (Q) to
+S, where Q refers to a series of queries, and S
+simulates the generation of query tokens T Q =
+{T Qs1 t1 , · · · , T Qsn tn } to be sent to A.
+• A executes CSP Query, and C sends the value of the
+leakage function Lverif y (α) to S, where α refers to the
+verification parameters used during a series of query
+processes. Then, simulates the execution of verif y.
+• A outputs a bit b ∈ 0, 1 as the result of this experiment.
+If for all PPT adversaries A, there exists a PPT simulator
+S and a negligible function negl(ξ), such that
+Pr[RealΩ,A(ξ) = 1] − Pr[IdealΩ,A,S(ξ) = 1] ≤ negl(ξ).
+Then, under this condition, the security of L =
+(LEnc , LQuery , Lverif y ) is established against IND-CQVA
+attacks. This means that the scheme can withstand adaptive
+chosen query and verification attacks.
+C. Security of VPCS
+In this section, we will provide proof of the IND-CQVAsecurity of VPCS proposed in our work.
+Theorem 2: If PRF and TPC are security, then VPCS is L =
+(LEnc , LQuery , Lverif y ) − security against adaptive chosen
+query and verify attack.
+Proof 2: By utilizing the constructed simulator S and three
+leakage functions, namely LEnc , LQuery and LV erif y , we
+simulate a ciphertext graph [A∗ ]n×n , a query token T Q∗ ,
+and a parameter α∗ . If, for any PPT adversary A, they are
+unable to distinguish between the Real and Ideal probability
+experiments, it can be concluded that the scheme achieves
+IND-CQVA-security.
+Simulating [A∗ ]n×n : Firstly, the simulator S randomly
+generates a virtual PRF key k ∗ and a set of virtual vertices
+
+1223
+
+TABLE I: Comparative Analysis of Verifiable Outsourcing Strategies
+Scheme
+VQOS [12]
+VPGI [33]
+VMAC [27]
+
+Type
+Attribute query
+Intersection query
+subgraph matching
+
+Method
+merkle hash tree
+Pairing-based accumulator
+Generic accumulator
+
+Our VPCS
+
+double-CSP
+
+MPC-ZKP
+
+V ∗ = {v1∗ , · · · , vn∗ }. For each vertex, S computes the PRF
+value with k ∗ , resulting in Vk∗∗ = {H(k ∗ , v1∗ ), · · · , H(k ∗ vn∗ )}.
+The distances and costs of the edges between vertices are replaced with random numbers. Subsequently, using the TPC, S
+encrypts each edge with the generated public key pk. Finally,
+S obtains a virtual ciphertext adjacency matrix [A∗ ]n×n .
+Simulating T Q∗ : For a given query sequence Q =
+{q1 , · · · , qn } and its corresponding query token list T Q =
+{T Qs1 t1 , · · · , T Qsn tn }, and given a leakage function
+LQuery (q) for each query qi , S proceeds to simulate the
+query token as follows: S first checks if the si and ti values
+appearing in the query have been encountered before. If si has
+been encountered previously, S assigns Hsi the same value as
+the previous occurrence; otherwise, S assigns Hsi = η, η is
+a non-repeating random integer and this assigning stores the
+relationship between si and η. A similar process is carried out
+for t. Then, S randomly selects two values and encrypts them
+using TPC to simulate two ciphertext constraint conditions Θ1
+and Θ2 . Finally, the simulated query token T Q∗ is obtained.
+Simulating verif y ∗ : S simulates an α and then randomly
+selects a generator g ∈ G1 and δ. Using the previously
+simulated pseudo-random function values Vk∗∗ of the vertices,
+S generates an array S ∗ with a length equal to len(Vk∗∗ ) =
+len(S ∗ ). Given a leakage function Lverif y , S computes a
+simulated proof. Finally, the verif y ∗ (proof ∗ ) is obtained.
+If PRF FPRF and TPC are secure, the simulated encrypted
+adjacency matrix [A∗ ]n×n , query token T Q∗ , and verification
+proof ∗ are indistinguishable from the real ones. As a result,
+no PPT adversary can distinguish between the real and ideal
+probabilistic experiments. Thus, we obtain
+Pr[RealΩ,A(ξ) = 1] − Pr[IdealΩ,A,S(ξ) = 1] ≤ negl(ξ).
+□
+VII. PERFORMANCE ANALYSIS
+A. Theoretical Analysis
+As shown in Table II, it can be observed that Connor,
+PGAS, and SPCS support CSD queries. However, Connor only
+supports approximate queries, while PGAS and SPCS support
+accurate CSD queries. In contrast, our proposed VPCS scheme
+supports double-CSP queries with verification capability.
+The efficiency of outsourcing computation for the shortest
+path in graphs is primarily influenced by the GraphEnc,
+TokeGen, and CSPquey algorithms. In Table II, we measure
+and compare the efficiency among Conor, PGAS, SPCS and
+VPCS based on computational and communication complexities. We evaluate computational complexity by comparing
+the number of modular exponential operations during the
+
+Security
+Collision-free
+Collision-free
+Collision-free
+IND-CQVA
+Collision-free
+
+computation process. Additionally, we measure communication complexity by considering the number of ciphertexts
+exchanged between entities. Here, m represents the number
+of edges in the graph data being processed, n represents the
+number of candidate paths between two queried vertices, and
+dθ represents the depth of the binary tree used for comparing
+during CSPQuery algorithm in Connor.
+From Tables II, it is evident that compared to Connor, PGAS
+and SPCS, VPCS achieves verifiable double-CSP queries without any additional computational or communication complexity. To further protect the topology information of the graph,
+it employs dummy edges to obfuscate the structure, which is
+also a contributing factor to the relatively high time complexity
+during the encryption phase. Furthermore, as demonstrated in
+Table I, our VPCS scheme exhibits IND-CQVA-security and
+Collision-free Verification Scheme, surpassing other verification methods.
+B. Experimental Analysis
+To further evaluate the efficiency of VPCS, we conducted
+experiments using publicly available real-world graph datasets
+and compared the performances among PGAS, SPCS and
+VPCS with CSD query. VPCS-I donates a single-CSD query
+of VPCS and is used for comparing with PGAS, and VPCSII donates a double-CSD query of VPCS and is used for
+comparing with SPCS. All of PGAS, SPCS and VPCS are
+implemented by Python. The experiments are conducted on
+Ubuntu 18.04 Linux X86-64 with CPU HyGon 7381 and
+32GB RAM.
+1) Datasets: We employed publicly accessible real-world
+graph datasets obtained from the SNAP website. The specific
+details of the datasets are outlined in Tab. III. For convenience,
+we randomly select subgraphs from these five graphs and
+assign random values for distances, costs, and time to each
+edge.
+2) Experimental result: Fig. 2 presents the query time of
+the four schemes across four different datasets. For single-CSD
+queries, PGAS has a shorter query time compared to VPCS-I
+due to the encryption of the outsourced graph data using the
+structure of vertex out-degree labels and in-degree labels in
+PGAS. However, this scheme leaks the topological structure of
+the graph data to the cloud server. Additionally, during queries,
+PGAS also leaks the number of paths between two query
+vertices. For double-CSD queries, the query time of SPCS is
+similar to that of VPCS-II as both schemes perform doubleCSD queries on the encrypted adjacency matrix. However,
+in the case of dummy edges, SPCS does not encrypt them;
+instead, it constructs a random number within a specific range,
+
+1224
+
+TABLE II: Efficiency Comparison among Different Schemes of Outsourcing Computation over Graph Data
+Scheme
+
+Query Type
+
+Connor [30]
+
+approximate single-CSD
+
+PGAS [10]
+
+single-CSD
+
+SPCS [11]
+
+double-CSD
+
+Our VPCS
+
+double-CSP
+
+(a)
+
+Computation CPX
+GraphEnc O(m)
+TokenGen O(2dθ )
+DistQuery O(ndθ)
+GraphEnc O(m)
+TokenGen O(1)
+DistQuery O(n)
+GraphEnc O(m)
+TokenGen O(1)
+DistQuery O(n)
+GraphEnc O(n2 )
+TokenGen O(1)
+CSPQuery O(n)
+
+(b)
+
+Communication CPX
+TokenGen O(2dθ )
+Distance O(1)
+TokenGen O(1)
+Distance O(1)
+TokenGen O(1)
+Distance O(1)
+TokenGen O(1)
+Distance O(1)
+
+(c)
+
+(d)
+
+Fig. 2: Query time. (a)ego-facebook. (b)p2p-Gnutella06. (c)wiki-vote. (d)email-eu-core.
+
+(a)
+
+(b)
+
+(c)
+
+(d)
+
+Fig. 3: Verify time. (a)ego-facebook. (b)p2p-Gnutella06. (c)wiki-vote. (d)email-eu-core.
+TABLE III: Detailed Information of Different Graph Datasets
+Dataset
+ego-Facebook
+p2p-Gnutella06
+wiki-Vote
+email-Eu-core
+
+Vertices
+4,039
+8,717
+7,115
+1,005
+
+Edges
+88,234
+31,525
+103,689
+25,571
+
+Storage
+834 KB
+325 KB
+1.04 MB
+77.9 KB
+
+allowing the cloud server to filter them directly. However,
+for every edge, whether dummy or real, SPCS executes two
+comparison protocols and its SXD protocol, resulting in a
+slightly shorter time compared to VPCS-II. However, this also
+leads to the leakage of the topological structure of the graph
+data owned by the GO.
+Therefore, our scheme sacrifices an acceptable amount of
+time to support higher security and privacy protection for
+outsourced data.
+Fig. 3 displays the execution time of our VPCS scheme
+for performing verifiable double-CSD queries on different
+datasets. The ”proof generation” indicates the time taken by
+
+the cloud server to generate verification proofs, which clearly
+increases gradually with the size of the queried graph. In
+contrast, the “verify’ represents the time required by the
+query user(QU) to validate the query results, and it shows
+no correlation with the size of the queried graph.
+Overall, the experimental results illustrate that our verifiable
+CSD query scheme can enhance the security of outsourced
+graph data computation while moderately sacrificing efficiency. Furthermore, it is the first strategy to support verifiable
+CSD queries.
+VIII. CONCLUSION
+In this study, we present a novel scheme called VPCS
+that supports verifiable double-CSP queries. To the best of
+our knowledge, this is the first scheme of its kind. We have
+confirmed that VPCS can verify queries without disclosing any
+information about other graph data. Moreover, VPCS achieves
+IND-CQVA-security and demonstrates acceptable efficiency
+when applied to real-world datasets. Our future work will
+
+1225
+
+involve exploring additional strategies for verifiable graph
+privacy-preserving queries.
+R EFERENCES
+[1] S. Ji, P. Mittal, and R. Beyah, “Graph data anonymization, deanonymization attacks, and de-anonymizability quantification: A survey,” IEEE Communications Surveys & Tutorials, vol. 19, no. 2,
+pp. 1305–1326, 2016.
+[2] J. Qian, X.-Y. Li, C. Zhang, L. Chen, T. Jung, and J. Han, “Social
+network de-anonymization and privacy inference with knowledge graph
+model,” IEEE Transactions on Dependable and Secure Computing,
+vol. 16, no. 4, pp. 679–692, 2017.
+[3] Y. Low, J. E. Gonzalez, A. Kyrola, D. Bickson, C. E. Guestrin,
+and J. Hellerstein, “Graphlab: A new framework for parallel machine
+learning,” arXiv preprint arXiv:1408.2041, 2014.
+[4] S. Ko and W.-S. Han, “Turbograph++ a scalable and fast graph analytics system,” in Proceedings of the 2018 International Conference on
+Management of Data, pp. 395–410, 2018.
+[5] R. K. Ibrahim, S. R. Zeebaree, K. Jacksi, S. H. Ahmed, S. M.
+Mohammed, R. R. Zebari, A. Alkhayyat, and Z. N. Rashid, “Clustering
+document based on semantic similarity using graph base spectral algorithm,” in 2022 5th International Conference on Engineering Technology
+and its Applications (IICETA), pp. 254–259, IEEE, 2022.
+[6] S. Storandt, “Route planning for bicycles—exact constrained shortest
+paths made practical via contraction hierarchy,” in Proceedings of
+the International Conference on Automated Planning and Scheduling,
+vol. 22, pp. 234–242, 2012.
+[7] S. Wang, X. Xiao, Y. Yang, and W. Lin, “Effective indexing for
+approximate constrained shortest path queries on large road networks,”
+Proceedings of the VLDB Endowment, vol. 10, no. 2, pp. 61–72, 2016.
+[8] G. Tsaggouris and C. Zaroliagis, “Multiobjective optimization: Improved
+fptas for shortest paths and non-linear objectives with applications,”
+Theory of Computing Systems, vol. 45, no. 1, pp. 162–186, 2009.
+[9] X. Meng, S. Kamara, K. Nissim, and G. Kollios, “Grecs: Graph
+encryption for approximate shortest distance queries,” in Proceedings of
+the 22nd ACM SIGSAC Conference on Computer and Communications
+Security, pp. 504–517, 2015.
+[10] C. Zhang, L. Zhu, C. Xu, K. Sharif, C. Zhang, and X. Liu, “Pgas:
+Privacy-preserving graph encryption for accurate constrained shortest
+distance queries,” Information Sciences, vol. 506, pp. 325–345, 2020.
+[11] W. Wang, Z. Jia, M. Xu, and S. Li, “Spcs: Strong privacy-preservingconstrained shortest distance queries on encrypted graphs,” IEEE Internet of Things Journal, vol. 9, no. 22, pp. 22516–22528, 2022.
+[12] X. Yao, R. Zhang, D. Huang, and Y. Zhang, “Verifiable query processing
+over outsourced social graph,” IEEE/ACM Transactions on Networking,
+vol. 29, no. 5, pp. 2313–2326, 2021.
+[13] X. Li, C. Weng, Y. Xu, X. Wang, and J. Rogers, “Zksql: Verifiable and
+efficient query evaluation with zero-knowledge proofs,” Proceedings of
+the VLDB Endowment, vol. 16, no. 8, pp. 1804–1816, 2023.
+[14] A. Viand, C. Knabenhans, and A. Hithnawi, “Verifiable fully homomorphic encryption,” arXiv preprint arXiv:2301.07041, 2023.
+[15] P. Ghosh and V. Shah, “New lower bounds in merlin-arthur communication and graph streaming verification,” arXiv preprint arXiv:2401.06378,
+2024.
+[16] Y. Peng, Z. Fan, B. Choi, J. Xu, and S. S. Bhowmick, “Authenticated
+subgraph similarity searchin outsourced graph databases,” IEEE Transactions on Knowledge and Data Engineering, vol. 27, no. 7, pp. 1838–
+1860, 2014.
+[17] Z. Fan, Y. Peng, B. Choi, J. Xu, and S. S. Bhowmick, “Towards efficient
+authenticated subgraph query service in outsourced graph databases,”
+IEEE Transactions on Services Computing, vol. 7, no. 4, pp. 696–713,
+2013.
+[18] H. Chen, Q. Qu, Y. Lin, X. Chen, and K. Li, “Authenticity verification
+on social data outsourcing,” Computers & Security, vol. 100, p. 102077,
+2021.
+[19] Z. Chang, L. Zou, and F. Li, “Privacy preserving subgraph matching
+on large graphs in cloud,” in Proceedings of the 2016 International
+Conference on Management of Data, pp. 199–213, 2016.
+[20] Z. Xu, F. Zhou, Y. Li, J. Xu, and Q. Wang, “Privacy-preserving subgraph
+matching protocol for two parties,” International Journal of Foundations
+of Computer Science, vol. 30, no. 04, pp. 571–588, 2019.
+
+[21] G. Suntaxi, A. A. El Ghazi, and K. Böhm, “Secrecy and performance
+models for query processing on outsourced graph data,” Distributed and
+Parallel Databases, vol. 39, pp. 35–77, 2021.
+[22] X. Liu, X.-F. Tu, D. Luo, G. Xu, N. N. Xiong, and X.-B. Chen, “Secure
+multi-party computation of graphs’ intersection and union under the
+malicious model,” Electronics, vol. 12, no. 2, p. 258, 2023.
+[23] M. Chase and S. Kamara, “Structured encryption and controlled disclosure,” in Advances in Cryptology-ASIACRYPT 2010: 16th International Conference on the Theory and Application of Cryptology and
+Information Security, Singapore, December 5-9, 2010. Proceedings 16,
+pp. 577–594, Springer, 2010.
+[24] M. Blanton, A. Steele, and M. Alisagari, “Data-oblivious graph algorithms for secure computation and outsourcing,” in Proceedings
+of the 8th ACM SIGSAC symposium on Information, computer and
+communications security, pp. 207–218, 2013.
+[25] A. Aly, E. Cuvelier, S. Mawet, O. Pereira, and M. Van Vyve, “Securely
+solving simple combinatorial graph problems,” in Financial Cryptography and Data Security: 17th International Conference, FC 2013,
+Okinawa, Japan, April 1-5, 2013, Revised Selected Papers 17, pp. 239–
+257, Springer, 2013.
+[26] C. Liu, L. Zhu, X. He, and J. Chen, “Enabling privacy-preserving
+shortest distance queries on encrypted graph data,” IEEE Transactions
+on Dependable and Secure Computing, vol. 18, no. 1, pp. 192–204,
+2018.
+[27] H. Zhu, B. Wu, M. Xie, Z. Cui, and Z. Wu, “Secure shortest path search
+over encrypted graph supporting synonym query in cloud computing,”
+in 2016 IEEE Trustcom/BigDataSE/ISPA, pp. 497–504, IEEE, 2016.
+[28] Z. Lu, Y. Feng, and Q. Cao, “Decentralized search for shortest path
+approximation in large-scale complex networks,” in 2017 IEEE International Conference on Cloud Computing Technology and Science
+(CloudCom), pp. 130–137, IEEE, 2017.
+[29] M. Shen, B. Ma, L. Zhu, R. Mijumbi, X. Du, and J. Hu, “Cloud-based
+approximate constrained shortest distance queries over encrypted graphs
+with privacy protection,” IEEE Transactions on Information Forensics
+and Security, vol. 13, no. 4, pp. 940–953, 2017.
+[30] M. Shen, S. Chen, L. Zhu, R. Xiao, K. Xu, and X. Du, “Privacypreserving graph encryption for approximate constrained shortest distance queries,” in 2019 IEEE Global Communications Conference
+(GLOBECOM), pp. 1–6, IEEE, 2019.
+[31] R. Gennaro, C. Gentry, and B. Parno, “Non-interactive verifiable computing: Outsourcing computation to untrusted workers,” in Advances in
+Cryptology–CRYPTO 2010: 30th Annual Cryptology Conference, Santa
+Barbara, CA, USA, August 15-19, 2010. Proceedings 30, pp. 465–482,
+Springer, 2010.
+[32] Y. Zhu, H. Li, J. Cui, and Y. Ma, “Verifiable subgraph matching with
+cryptographic accumulators in cloud computing,” IEEE Access, vol. 7,
+pp. 169636–169645, 2019.
+[33] X. Zuo, L. Li, S. Luo, H. Peng, Y. Yang, and L. Gong, “Privacypreserving verifiable graph intersection scheme with cryptographic accumulators in social networks,” IEEE Internet of Things Journal, vol. 8,
+no. 6, pp. 4590–4603, 2020.
+[34] X. Liu, K.-K. R. Choo, R. H. Deng, R. Lu, and J. Weng, “Efficient and
+privacy-preserving outsourced calculation of rational numbers,” IEEE
+Transactions on Dependable and Secure Computing, vol. 15, no. 1,
+pp. 27–39, 2016.
+
+1226
+
+

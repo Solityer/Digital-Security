@@ -1,14 +1,16 @@
 # API Contract Check
 
-本文档记录比赛演示版本中已经对齐并验证过的关键接口契约，避免前后端再次因字段漂移导致页面空白、`map/reduce` 报错或图表无数据。
+本文档记录当前平台版本中已经对齐并验证过的关键接口契约，避免前后端再次因字段漂移导致页面空白、`map/reduce` 报错或图表无数据。
+
+说明：为保持兼容性，部分内部接口路径仍保留 `/api/demo/*` 与 `/tamper-demo` 命名，但前端对外统一呈现为行业方案编排与完整性校验能力。
 
 ## 已验证结果
 
 - 后端编译通过：`python -m compileall app`
-- 后端测试通过：`26 passed`
+- 后端测试通过：`18 passed`（算法测试）+ `8 passed`（API 测试）
 - 前端构建通过：`npm run build`
-- 运行期检查通过：`bash scripts/check.sh`
-- 运行期烟雾验收通过：`bash scripts/smoke_api.sh`
+- 运行期检查通过：`bash scripts/check.sh`（8/8）
+- 运行期烟雾验收通过：`bash scripts/smoke_api.sh`（18/18）
 
 ## 全局约定
 
@@ -78,7 +80,9 @@
 - 使用字段：`asset_id`、`epsilon`
 
 - `POST /api/privacy/gs-ldp`
-- 使用字段：`asset_id`、`epsilon`、`randomize_edges`、`randomize_attributes`、`edge_flip_prob`、`attr_noise_scale`
+- 请求字段：`asset_id`、`epsilon`、`mode`（`"edge_ldp"` | `"node_ldp"`）、`n_groups`（默认 5）、`randomize_edges`、`randomize_attributes`、`edge_flip_prob`、`attr_noise_scale`
+- `result` 中关键字段：`true_edge_count`（兼容旧版）、`estimated_degree_distribution`、`true_triangles_sample`、`estimated_triangles_sample`、`true_global_cc`、`estimated_global_cc`、`estimated_per_node_cc_sample`
+- `metrics` 中关键字段：`degree_dist_l1`（别名 `l1_degree_distribution`）、`degree_dist_hellinger`、`triangle_mae`、`triangle_mse`、`cc_absolute_error`、`cc_relative_error`
 
 - `POST /api/privacy/ndkd`
 - 使用字段：`asset_id`、`k`、`epsilon`

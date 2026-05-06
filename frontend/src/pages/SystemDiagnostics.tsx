@@ -36,12 +36,12 @@ export default function SystemDiagnostics() {
   const runDiagnostics = useCallback(async () => {
     setLoading(true)
     const checks = [
-      { label: '健康检查', path: '/health', run: () => getHealth() },
-      { label: '资产列表', path: '/api/assets', run: () => getAssets() },
-      { label: '合约列表', path: '/api/contracts', run: () => getContracts() },
-      { label: '审计日志', path: '/api/audit/logs?limit=5', run: () => getAuditLogs({ limit: 5 }) },
-      { label: '风险事件', path: '/api/risks', run: () => getRisks() },
-      { label: '场景配置', path: '/api/demo/scenarios', run: () => getDemoScenarios() },
+      { label: '健康检查', path: '基础健康服务', run: () => getHealth() },
+      { label: '资产列表', path: '资产治理服务', run: () => getAssets() },
+      { label: '合约列表', path: '合约授权服务', run: () => getContracts() },
+      { label: '审计日志', path: '审计追踪服务', run: () => getAuditLogs({ limit: 5 }) },
+      { label: '风险事件', path: '风险监控服务', run: () => getRisks() },
+      { label: '场景配置', path: '行业方案编排服务', run: () => getDemoScenarios() },
     ]
 
     const resolved = await Promise.all(checks.map(async (check) => {
@@ -80,7 +80,7 @@ export default function SystemDiagnostics() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black text-tech">系统诊断</h1>
-          <p className="text-slate-400 text-sm mt-0.5">用于演示前自检核心接口状态、响应时延与返回摘要。</p>
+          <p className="text-slate-400 text-sm mt-0.5">用于运行前检查核心服务状态、响应时延与返回摘要。</p>
         </div>
         <button onClick={runDiagnostics} className="btn btn-secondary gap-2" disabled={loading}>
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -112,7 +112,7 @@ export default function SystemDiagnostics() {
               <thead>
                 <tr>
                   <th>接口</th>
-                  <th>请求路径</th>
+                  <th>检测对象</th>
                   <th>状态</th>
                   <th>耗时</th>
                   <th>响应摘要</th>
@@ -146,9 +146,9 @@ export default function SystemDiagnostics() {
       <div className="card-glow p-5">
         <h2 className="section-header">使用建议</h2>
         <div className="space-y-3 text-sm text-slate-300">
-          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />比赛开始前先打开本页，确保 5 个核心接口全部 OK。</div>
-          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />若某个接口 FAIL，可根据响应摘要快速判断是后端未启动、代理异常还是数据初始化缺失。</div>
-          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />全部通过后，再依次进入驾驶舱、隐私实验室、VPCS、zkGCN 和场景页进行联调展示。</div>
+          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />系统发布或联调前先打开本页，确认核心服务全部处于正常状态。</div>
+          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />若某个服务返回 FAIL，可根据响应摘要快速判断是后端未启动、代理异常还是数据初始化缺失。</div>
+          <div className="flex items-start gap-2"><Activity className="w-4 h-4 text-blue-400 mt-0.5" />全部通过后，再依次进入驾驶舱、隐私计算、可信查询、可验证推理和行业方案页进行联调验证。</div>
         </div>
       </div>
     </div>

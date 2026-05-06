@@ -360,8 +360,7 @@ function GCCSDPTab({ assets }: { assets: Asset[] }) {
 function GSLDPTab({ assets }: { assets: Asset[] }) {
   const [assetId, setAssetId] = useState('')
   const [epsilon, setEpsilon] = useState(1)
-  const [theta, setTheta] = useState(0.2)
-  const [mode, setMode] = useState<'node' | 'edge'>('node')
+  const [mode, setMode] = useState<'node_ldp' | 'edge_ldp'>('edge_ldp')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [response, setResponse] = useState<TaskResponse | null>(null)
@@ -378,10 +377,12 @@ function GSLDPTab({ assets }: { assets: Asset[] }) {
       const data = await runGSLDP({
         asset_id: Number(assetId),
         epsilon,
+        mode,
+        n_groups: 5,
         randomize_edges: true,
-        randomize_attributes: mode === 'node',
-        edge_flip_prob: theta,
-        attr_noise_scale: theta,
+        randomize_attributes: true,
+        edge_flip_prob: 0.0,
+        attr_noise_scale: 0.5,
       })
       setResponse(toObject<TaskResponse>(data, {} as TaskResponse))
     } catch (err: unknown) {
@@ -393,29 +394,39 @@ function GSLDPTab({ assets }: { assets: Asset[] }) {
 
   const result = unwrapResult<Record<string, unknown>>(response)
   const trueDist = getDistributionData(result.true_degree_distribution)
+  const estDist = getDistributionData(result.estimated_degree_distribution)
   const noisyDist = getDistributionData(result.noisy_degree_distribution)
-  const labels = trueDist.labels.length > 0 ? trueDist.labels : noisyDist.labels
+  const labels = trueDist.labels.length > 0 ? trueDist.labels : estDist.labels
+
+  const triSample = toObject<Record<string, unknown>>(result.estimated_triangles_sample, {})
+  const triTrueSample = toObject<Record<string, unknown>>(result.true_triangles_sample, {})
+  const triKeys = Object.keys(triSample).slice(0, 8)
+
+  const trueCC = safeNumber(result.true_global_cc)
+  const estCC = safeNumber(result.estimated_global_cc)
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="col-span-2"><AssetSelector assets={assets} value={assetId} onChange={setAssetId} /></div>
+      {/* 技术说明 */}
+      <div className="rounded-lg px-4 py-2.5 text-xs text-cyan-200" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)' }}>
+        <strong>GS-LDP</strong>：同时采集度分布（Node-LDP + 对称一元编码 SUC）、三角计数序列（含剪枝算法）和聚类系数（Laplace 机制），支持 Node-LDP 和 Edge-LDP 两种隐私模式切换。
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="col-span-2 md:col-span-2"><AssetSelector assets={assets} value={assetId} onChange={setAssetId} /></div>
         <div>
           <label className="form-label">隐私预算 ε: {epsilon}</label>
           <input type="range" min="0.1" max="5" step="0.1" value={epsilon} onChange={(event) => setEpsilon(Number(event.target.value))} className="w-full accent-blue-500 mt-2" />
         </div>
-        <div>
-          <label className="form-label">噪声强度 θ: {theta.toFixed(2)}</label>
-          <input type="range" min="0.05" max="0.8" step="0.05" value={theta} onChange={(event) => setTheta(Number(event.target.value))} className="w-full accent-cyan-500 mt-2" />
-        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <label className="form-label mb-0">模式</label>
+      <div className="flex items-center gap-4 flex-wrap">
+        <label className="form-label mb-0">隐私模式</label>
         <div className="flex rounded-lg overflow-hidden border border-slate-700">
-          {(['node', 'edge'] as const).map((item) => (
-            <button key={item} type="button" onClick={() => setMode(item)} className={`px-4 py-1.5 text-sm font-medium transition-colors ${mode === item ? 'bg-blue-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-slate-200'}`}>
-              {item === 'node' ? 'Node-LDP' : 'Edge-LDP'}
+          {(['node_ldp', 'edge_ldp'] as const).map((item) => (
+            <button key={item} type="button" onClick={() => setMode(item)}
+              className={`px-4 py-1.5 text-sm font-medium transition-colors ${mode === item ? 'bg-blue-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-slate-200'}`}>
+              {item === 'node_ldp' ? 'Node-LDP' : 'Edge-LDP'}
             </button>
           ))}
         </div>
@@ -431,15 +442,17 @@ function GSLDPTab({ assets }: { assets: Asset[] }) {
       </div>
 
       {error ? <p className="alert-error">{error}</p> : null}
-      {loading ? <LoadingSpinner message="运行本地差分隐私算法..." className="py-8" size="lg" /> : null}
+      {loading ? <LoadingSpinner message="运行本地差分隐私算法（度分布 + 三角计数 + 聚类系数）..." className="py-8" size="lg" /> : null}
 
       {!loading && response ? (
         <div className="space-y-4 animate-fade-in">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 统计摘要卡片 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { label: '原始边数', value: String(safeNumber(result.true_edge_count)), color: '#3b82f6' },
               { label: '扰动后边数', value: String(safeNumber(result.noisy_edge_count)), color: '#10b981' },
-              { label: '模式', value: mode === 'node' ? 'Node-LDP' : 'Edge-LDP', color: '#a78bfa' },
+              { label: '真实全局聚类系数', value: trueCC.toFixed(4), color: '#a78bfa' },
+              { label: '估计聚类系数', value: estCC.toFixed(4), color: '#f59e0b' },
             ].map((item) => (
               <div key={item.label} className="rounded-lg p-3 text-center" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
                 <p className="text-lg font-black font-mono" style={{ color: item.color }}>{item.value}</p>
@@ -448,17 +461,37 @@ function GSLDPTab({ assets }: { assets: Asset[] }) {
             ))}
           </div>
 
+          {/* 度分布对比 */}
           {labels.length > 0 ? (
             <div className="card-glow p-4">
-              <p className="section-header">度分布对比</p>
+              <p className="section-header">度分布采集结果（Node-LDP + SUC）</p>
               <ReactECharts option={barOption(labels, [
-                { name: '原始分布', data: trueDist.values, color: '#3b82f6' },
-                { name: '扰动分布', data: noisyDist.values, color: '#f59e0b' },
+                { name: '真实分布', data: trueDist.values, color: '#3b82f6' },
+                { name: 'SUC 估计分布', data: estDist.values.length > 0 ? estDist.values : noisyDist.values, color: '#10b981' },
               ])} style={{ height: 220 }} />
             </div>
-          ) : (
-            <JsonFallback title="GS-LDP 原始返回" data={response} />
-          )}
+          ) : null}
+
+          {/* 三角计数对比 */}
+          {triKeys.length > 0 ? (
+            <div className="card-glow p-4">
+              <p className="section-header">三角计数序列（含剪枝算法）</p>
+              <ReactECharts option={barOption(triKeys.map((k) => `节点${k}`), [
+                { name: '真实三角数', data: triKeys.map((k) => safeNumber(triTrueSample[k])), color: '#3b82f6' },
+                { name: '估计三角数', data: triKeys.map((k) => safeNumber(triSample[k])), color: '#f59e0b' },
+              ])} style={{ height: 200 }} />
+            </div>
+          ) : null}
+
+          {/* 聚类系数 */}
+          {(trueCC > 0 || estCC > 0) ? (
+            <div className="card-glow p-4">
+              <p className="section-header">聚类系数采集（Laplace 机制）</p>
+              <ReactECharts option={barOption(['真实全局 CC', '估计全局 CC'], [
+                { name: '聚类系数', data: [trueCC, estCC], color: '#a78bfa' },
+              ])} style={{ height: 180 }} />
+            </div>
+          ) : null}
 
           <ResultMeta response={response} />
         </div>
@@ -646,7 +679,7 @@ export default function PrivacyLab() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { title: 'Graph-SDP', desc: '度分布隐私发布，展示真实/扰动/校正三种分布对比。', color: '#3b82f6' },
-          { title: 'GCC-SDP', desc: '聚类系数差分隐私发布，适合演示全局统计量保护。', color: '#a78bfa' },
+          { title: 'GCC-SDP', desc: '聚类系数差分隐私发布，适合说明全局统计量保护。', color: '#a78bfa' },
           { title: 'GS-LDP', desc: '本地差分隐私保护，重点展示边扰动和度分布变化。', color: '#22d3ee' },
           { title: 'NDKD', desc: 'k-度匿名化，适合展示匿名前后结构统计变化。', color: '#10b981' },
         ].map((item) => (

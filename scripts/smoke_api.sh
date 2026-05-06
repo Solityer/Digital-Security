@@ -101,10 +101,10 @@ run_step "GCC-SDP" POST "$API_BASE/api/privacy/gcc-sdp" "{\"asset_id\": $asset_i
 run_step "GS-LDP" POST "$API_BASE/api/privacy/gs-ldp" "{\"asset_id\": $asset_id, \"epsilon\": 2.0, \"randomize_edges\": true, \"randomize_attributes\": true, \"edge_flip_prob\": 0.2, \"attr_noise_scale\": 0.2}"
 run_step "NDKD" POST "$API_BASE/api/privacy/ndkd" "{\"asset_id\": $asset_id, \"k\": 3, \"epsilon\": 1.0}"
 run_step "VPCS 查询" POST "$API_BASE/api/vpcs/query" "{\"asset_id\": $asset_id, \"source_node\": \"$source_node\", \"target_node\": \"$target_node\", \"cost_threshold\": 50, \"time_threshold\": 50, \"distance_constraint\": 50, \"budget\": 50}"
-run_step "VPCS 篡改演示" POST "$API_BASE/api/vpcs/tamper-demo" "{\"asset_id\": $asset_id, \"source_node\": \"$source_node\", \"target_node\": \"$target_node\", \"cost_threshold\": 50, \"time_threshold\": 50, \"distance_constraint\": 50, \"budget\": 50}"
+run_step "VPCS 完整性校验场景" POST "$API_BASE/api/vpcs/tamper-demo" "{\"asset_id\": $asset_id, \"source_node\": \"$source_node\", \"target_node\": \"$target_node\", \"cost_threshold\": 50, \"time_threshold\": 50, \"distance_constraint\": 50, \"budget\": 50}"
 run_step "zkGCN 推理" POST "$API_BASE/api/zkgcn/infer" "{\"asset_id\": $asset_id, \"layers\": 2, \"hidden_dim\": 64, \"model_type\": \"gcn\"}"
-run_step "zkGCN 篡改演示" POST "$API_BASE/api/zkgcn/tamper-demo" "{\"asset_id\": $asset_id, \"layers\": 2, \"hidden_dim\": 64, \"model_type\": \"gcn\"}"
+run_step "zkGCN 完整性校验场景" POST "$API_BASE/api/zkgcn/tamper-demo" "{\"asset_id\": $asset_id, \"layers\": 2, \"hidden_dim\": 64, \"model_type\": \"gcn\"}"
 run_step "场景列表" GET "$API_BASE/api/demo/scenarios"
-run_step "金融场景运行" POST "$API_BASE/api/demo/run/finance" '{}'
+run_step "金融方案流程执行" POST "$API_BASE/api/demo/run/finance" '{}'
 
 record "Smoke API completed. Total passed: $pass_count"

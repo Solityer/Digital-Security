@@ -1,6 +1,6 @@
 """
 seed_data.py
-Populates the 数智安行 database with sample data for development / demo use.
+Populates the 数智安行 database with baseline operational datasets for local development and verification.
 
 Run directly:
     cd /home/match/Digital-Security/backend
@@ -56,7 +56,7 @@ from sqlalchemy import select  # noqa: E402
 # ---------------------------------------------------------------------------
 
 def _hash_password(plain: str) -> str:
-    """Deterministic SHA-256 password hash (demo only – not production-safe)."""
+    """Deterministic SHA-256 password hash for local bootstrap only."""
     return hashlib.sha256(plain.encode()).hexdigest()
 
 
@@ -80,7 +80,7 @@ async def _seed_users(session) -> dict[str, User]:
         ("admin",   "admin@trust-hub.local",   UserRole.admin,    "admin123"),
         ("analyst", "analyst@trust-hub.local", UserRole.analyst,  "analyst123"),
         ("auditor", "auditor@trust-hub.local", UserRole.auditor,  "auditor123"),
-        ("demo",    "demo@trust-hub.local",    UserRole.demo,     "demo123"),
+        ("observer", "observer@trust-hub.local", UserRole.demo,   "observer123"),
     ]
 
     users: dict[str, User] = {}
@@ -111,7 +111,7 @@ async def _seed_users(session) -> dict[str, User]:
 
 
 async def _seed_assets(session, users: dict[str, User]) -> dict[str, Asset]:
-    """Create curated demo assets with graph snapshots."""
+    """Create curated enterprise assets with graph snapshots."""
     admin = users["admin"]
     analyst = users["analyst"]
 
@@ -207,19 +207,19 @@ async def _seed_assets(session, users: dict[str, User]) -> dict[str, Asset]:
             "seed": 17,
         },
         {
-            "name": "通用社交关系网络",
-            "industry": IndustryType.social,
+            "name": "供应链协同关系网络",
+            "industry": IndustryType.finance,
             "description": (
-                "基于公开关系样本抽象出的社交互动网络，"
-                "可用于匿名化、差分隐私与图推理算法的稳定性验证。"
+                "围绕核心企业、供应商、物流节点与履约环节构建的协同关系网络，"
+                "用于结构稳定性分析、风险联查与策略回溯。"
             ),
-            "node_meaning": "个人用户 / 群组 / 内容节点",
-            "edge_meaning": "关注关系 / 互动关系 / 同群关系 / 协同关系",
-            "subject_type": "社交用户",
-            "data_source": "社交平台公开关系样本库",
-            "sensitivity_level": 2,
-            "compliance_tags": ["个人信息保护法", "社交隐私", "匿名化研究"],
-            "authorization_scope": "限平台内部研究与算法验证使用",
+            "node_meaning": "核心企业 / 供应商 / 园区 / 物流节点",
+            "edge_meaning": "供货关系 / 履约关系 / 仓配协同 / 风险传导关系",
+            "subject_type": "供应链主体",
+            "data_source": "供应链协同治理样本库",
+            "sensitivity_level": 3,
+            "compliance_tags": ["供应链协同", "数据安全法", "业务审阅"],
+            "authorization_scope": "限业务观察、结构评估与审计复核使用",
             "owner_id": analyst.id,
             "graph_gen": generate_social_graph,
             "seed": 42,
@@ -303,7 +303,7 @@ async def _seed_contracts(
     admin   = users["admin"]
     analyst = users["analyst"]
     auditor = users["auditor"]
-    demo    = users["demo"]
+    observer = users["observer"]
 
     now = datetime.utcnow()
     contract_defs = [
@@ -340,9 +340,9 @@ async def _seed_contracts(
         {
             "title": "政务开放数据共享授权协议",
             "provider_id": admin.id,
-            "consumer_id": demo.id,
+            "consumer_id": observer.id,
             "purpose": (
-                "授权开放服务账号在政务沙箱中访问目录化政务关系数据，"
+                "授权业务观察员在政务沙箱中访问目录化政务关系数据，"
                 "用于公共服务分析、可验证推理与审计核验。"
             ),
             "valid_from": now - timedelta(days=3),
@@ -383,16 +383,16 @@ async def _seed_contracts(
             "status": ContractStatus.suspended,
         },
         {
-            "title": "社交关系网络研究访问协议",
+            "title": "供应链协同网络审阅协议",
             "provider_id": analyst.id,
-            "consumer_id": demo.id,
+            "consumer_id": observer.id,
             "purpose": (
-                "支持匿名化社交关系网络的算法稳定性验证与教学研究，"
-                "禁止输出可逆识别信息或传播明细。"
+                "支持供应链协同关系网络的只读审阅、结构评估与异常复核，"
+                "禁止导出可逆识别信息或外发明细数据。"
             ),
             "valid_from": now - timedelta(days=120),
             "valid_until": now - timedelta(days=2),
-            "accessible_fields": ["node_degree", "group_id", "relation_type"],
+            "accessible_fields": ["node_degree", "supplier_group", "relation_type"],
             "allowed_algorithms": ["gs_ldp", "ndkd"],
             "privacy_budget_limit": 0.8,
             "status": ContractStatus.terminated,
@@ -442,13 +442,13 @@ async def _seed_audit_logs(
     admin   = users["admin"]
     analyst = users["analyst"]
     auditor = users["auditor"]
-    demo    = users["demo"]
+    observer = users["observer"]
 
     finance_asset  = assets.get("金融交易关系图谱")
     medical_asset  = assets.get("医疗协同诊疗网络")
     gov_asset      = assets.get("政务开放数据关联图")
     traffic_asset  = assets.get("城市交通出行网络")
-    social_asset   = assets.get("通用社交关系网络")
+    social_asset   = assets.get("供应链协同关系网络")
 
     # Check if audit logs already seeded (look for a known action)
     row = await session.execute(
@@ -485,7 +485,7 @@ async def _seed_audit_logs(
             action="提交合约审批",
             target_type="contract", target_id="3",
             result=AuditResult.success,
-            detail={"title": "政务开放数据共享授权协议", "status": "pending", "consumer": demo.username},
+            detail={"title": "政务开放数据共享授权协议", "status": "pending", "consumer": observer.username},
         ),
         dict(
             username=auditor.username, role="auditor", user_id=auditor.id,
@@ -565,11 +565,11 @@ async def _seed_audit_logs(
             detail={"chain_intact": True, "total_records": 15},
         ),
         dict(
-            username=demo.username, role="demo", user_id=demo.id,
+            username=observer.username, role="demo", user_id=observer.id,
             action="访问资产",
             target_type="asset", target_id=str(social_asset.id) if social_asset else "6",
             result=AuditResult.success,
-            detail={"asset_name": "通用社交关系网络", "operation": "read", "channel": "sandbox"},
+            detail={"asset_name": "供应链协同关系网络", "operation": "read", "channel": "sandbox"},
         ),
         dict(
             username=admin.username, role="admin", user_id=admin.id,
@@ -627,7 +627,7 @@ async def _seed_audit_logs(
 async def _seed_demo_scenarios(
     session, assets: dict[str, Asset]
 ) -> None:
-    """Create 3 pre-configured demo scenarios."""
+    """Create 3 pre-configured business scenarios."""
     scenario_defs = [
         {
             "scenario_key": ScenarioKey.finance,
@@ -679,7 +679,7 @@ async def _seed_demo_scenarios(
         )
         existing = row.scalar_one_or_none()
         if existing:
-            print(f"  [skip] demo scenario '{sdef['title']}' already exists")
+            print(f"  [skip] scenario '{sdef['title']}' already exists")
             continue
 
         asset = assets.get(sdef["asset_name"])
@@ -693,7 +693,7 @@ async def _seed_demo_scenarios(
         )
         session.add(scenario)
         await session.flush()
-        print(f"  [ok]   created demo scenario '{sdef['title']}'")
+        print(f"  [ok]   created scenario '{sdef['title']}'")
 
 
 async def _seed_risk_events(
@@ -702,7 +702,7 @@ async def _seed_risk_events(
     """Create curated risk events for the monitoring dashboard."""
     admin   = users["admin"]
     analyst = users["analyst"]
-    demo    = users["demo"]
+    observer = users["observer"]
 
     finance_asset = assets.get("金融交易关系图谱")
     medical_asset = assets.get("医疗协同诊疗网络")
@@ -723,7 +723,7 @@ async def _seed_risk_events(
             "event_type": RiskEventType.unauthorized_access,
             "severity": RiskSeverity.critical,
             "asset_id": enterprise_asset.id if enterprise_asset else None,
-            "user_id": demo.id,
+            "user_id": observer.id,
             "description": (
                 "跨机构联合建模任务尝试读取未授权的企业诉讼明细字段，"
                 "RBAC/ABAC 策略已阻断本次访问。"
@@ -792,7 +792,7 @@ async def _seed_risk_events(
             "event_type": RiskEventType.anomaly_access,
             "severity": RiskSeverity.medium,
             "asset_id": finance_asset.id if finance_asset else None,
-            "user_id": demo.id,
+            "user_id": observer.id,
             "description": (
                 "短时间内针对金融交易关系图谱发起高频路径查询，"
                 "访问频率超过安全基线，已触发行为预警。"
@@ -864,7 +864,7 @@ async def _seed_risk_events(
 
 async def main() -> None:
     print("========================================")
-    print("  数智安行 | 数据可信治理平台")
+    print("  数智安行｜图数据可信治理与智能流通平台")
     print("  初始化种子数据...")
     print("========================================")
 
@@ -891,8 +891,8 @@ async def main() -> None:
             print("\n[5/6] 创建审计日志...")
             await _seed_audit_logs(session, users, assets)
 
-            # 6. Demo scenarios
-            print("\n[5b/6] 创建演示场景...")
+            # 6. Business scenarios
+            print("\n[5b/6] 创建行业方案场景...")
             await _seed_demo_scenarios(session, assets)
 
             # 7. Risk events
@@ -907,7 +907,7 @@ async def main() -> None:
             print("    admin   / admin123   (管理员)")
             print("    analyst / analyst123 (分析师)")
             print("    auditor / auditor123 (审计员)")
-            print("    demo    / demo123    (演示账号)")
+            print("    observer / observer123 (业务观察员)")
             print("========================================")
 
         except Exception as exc:

@@ -63,7 +63,7 @@ const FALLBACK_SCENARIOS: ScenarioInfo[] = [
     capabilities: ['数据资产治理', 'VPCS 可验证查询', 'GS-LDP 隐私保护', '风险联动预警'],
     technologies: ['Graph-SDP', 'VPCS', 'RBAC/ABAC', '审计追踪'],
     steps: ['准备金融资产', '执行 VPCS 路径验证', '运行 GS-LDP', '输出风险评估'],
-    value: '适用于贷前反欺诈、异常资金链排查和联合风控答辩展示。',
+    value: '适用于贷前反欺诈、异常资金链排查和跨机构联合风控评审。',
   },
   {
     id: 'medical',
@@ -169,7 +169,7 @@ function ScenarioCard({ scenario, color }: { scenario: ScenarioInfo; color: stri
       const data = await runDemoScenario(scenarioId)
       setResult(toObject<ScenarioResult>(data, {} as ScenarioResult))
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '演示执行失败')
+      setError(err instanceof Error ? err.message : '流程执行失败')
     } finally {
       setRunning(false)
     }
@@ -245,7 +245,7 @@ function ScenarioCard({ scenario, color }: { scenario: ScenarioInfo; color: stri
         style={{ background: `linear-gradient(135deg, ${color}20, ${color}30)`, border: `1px solid ${color}50`, color }}
       >
         {running ? <LoadingSpinner size="sm" /> : <Play className="w-5 h-5" />}
-        {running ? '场景运行中...' : '一键运行'}
+        {running ? '流程执行中...' : '启动业务流程'}
       </button>
 
       {error ? <p className="alert-error">{error}</p> : null}
@@ -336,8 +336,8 @@ export default function ScenarioDemo() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-tech">行业场景演示</h1>
-          <p className="text-slate-400 text-sm mt-0.5">金融、医疗、政务三大典型数据流通场景端到端演示</p>
+          <h1 className="text-xl font-black text-tech">行业解决方案</h1>
+          <p className="text-slate-400 text-sm mt-0.5">金融、医疗、政务三大典型图数据流通方案的端到端业务流程</p>
         </div>
         <button onClick={load} disabled={loading} className="btn btn-secondary gap-2">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> 刷新
@@ -346,7 +346,7 @@ export default function ScenarioDemo() {
 
       {loadError ? (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          场景接口加载失败，页面已回退到内置演示配置。错误信息：{loadError}
+          场景接口加载失败，页面已回退到内置业务配置。错误信息：{loadError}
         </div>
       ) : null}
 
@@ -393,13 +393,13 @@ export default function ScenarioDemo() {
             },
             {
               title: '可验证加密查询',
-              points: ['路径查询结果可验证', '篡改演示可直接展示', '支持加密摘要与 proof hash'],
+              points: ['路径查询结果可验证', '异常校验结果可直接展示', '支持加密摘要与 proof hash'],
               color: '#22d3ee',
               icon: Shield,
             },
             {
               title: '可信治理体系',
-              points: ['哈希链审计', '风险预警与授权评估', '比赛前可快速诊断接口状态'],
+              points: ['哈希链审计', '风险预警与授权评估', '支持上线前快速诊断接口状态'],
               color: '#10b981',
               icon: Activity,
             },

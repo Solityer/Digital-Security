@@ -175,7 +175,7 @@ export default function VPCSQuery() {
         setResult(toObject<VPCSResponse>(data, {} as VPCSResponse))
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : mode === 'query' ? '查询失败' : '篡改演示失败')
+      setError(err instanceof Error ? err.message : mode === 'query' ? '查询失败' : '完整性校验任务失败')
     } finally {
       setLoading(false)
       setTamperLoading(false)
@@ -201,12 +201,21 @@ export default function VPCSQuery() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-tech">VPCS 加密路径查询</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Verifiable Private Constrained Shortest-path 演示页</p>
+          <h1 className="text-xl font-black text-tech">可信路径查询</h1>
+          <p className="text-slate-400 text-sm mt-0.5">约束路径计算、结果完整性校验与篡改检测</p>
         </div>
         <button onClick={loadAssets} className="btn btn-secondary" disabled={assetsLoading}>
           <RefreshCw className={`w-4 h-4 ${assetsLoading ? 'animate-spin' : ''}`} />
         </button>
+      </div>
+
+      {/* 技术边界声明 */}
+      <div className="rounded-lg px-4 py-2.5 text-xs" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
+        <span className="text-amber-300 font-semibold">技术实现说明：</span>
+        <span className="text-amber-200/80 ml-1">
+          当前系统采用工程化可验证链路实现，覆盖四角色协作、虚假边混淆、约束路径搜索、证明摘要与完整性校验。
+          对于高安全等级密码场景，可扩展接入门限同态加密、安全比较协议与专用密码模块。
+        </span>
       </div>
 
       {loadError ? (
@@ -279,7 +288,7 @@ export default function VPCSQuery() {
             </button>
             <button onClick={() => execute('tamper')} disabled={tamperLoading || !assetId} className="btn btn-danger flex-1 gap-2 justify-center">
               {tamperLoading ? <LoadingSpinner size="sm" /> : <AlertTriangle className="w-4 h-4" />}
-              {tamperLoading ? '演示中...' : '篡改演示'}
+              {tamperLoading ? '校验中...' : '异常校验场景'}
             </button>
           </div>
 
@@ -321,7 +330,7 @@ export default function VPCSQuery() {
                   <div className="alert-error flex items-center gap-3 text-base font-bold mb-4">
                     <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0" />
                     <div>
-                      <p>验证失败，检测到篡改结果。</p>
+                      <p>验证失败，检测到结果完整性异常。</p>
                       <p className="text-sm font-normal opacity-80 mt-0.5">本次查询结果与证明不一致，页面已明确标记为不可信。</p>
                     </div>
                   </div>
@@ -375,7 +384,7 @@ export default function VPCSQuery() {
                 <div className="mt-4 p-3 rounded-lg" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
                   <p className="text-xs text-slate-400">
                     <Shield className="w-3.5 h-3.5 inline mr-1 text-blue-400" />
-                    查询结果、路径统计和加密图摘要被共同绑定到 proof hash，评委可直接对比正常查询与篡改演示的验证结果。
+                    查询结果、路径统计和加密图摘要被共同绑定到 proof hash，可直接对比正常查询与异常校验场景的验证结果。
                   </p>
                 </div>
               </div>
